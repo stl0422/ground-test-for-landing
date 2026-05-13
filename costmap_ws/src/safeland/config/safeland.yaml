@@ -1,0 +1,116 @@
+# ---- 话题 ----
+input_grid_map_topic: /global_grid_map
+output_grid_map_topic: /safeland/grid_map
+
+# ---- 安全阈值 ----
+slope_threshold: 0.15        # rad，约 8.6°
+roughness_threshold: 0.05    # m
+step_threshold: 0.05         # m
+min_cell_points: 5.0         # 单栅格至少累计这么多点才认为观测可靠，避免坑底/稀疏区域误判
+
+# max_valid_z：高度上限过滤（m）
+#   超过此高度的栅格视为"悬空点"（树冠、建筑物外墙、线缆等反射到高程图上的异常高点）
+#   不参与坡度 / 粗糙度 / 凹陷计算，也不会被选为降落点
+#
+#   设置指导：
+#     一般室外低空场景：1.0 ~ 1.5 m（无人机飞行高度下，地面一般在 -0.5~0.5 m 之间）
+#     室内或地形起伏大的场景：调大或设为 -999（关闭上限过滤）
+#     注意：此参数作用在 reliable_valid 上，不影响高程图本身数据
+max_valid_z: 1.0
+
+# ---- 计算参数 ----
+smooth_radius: 0.3           # m，粗糙度均值平滑半径（实际 kernel 大小 = smooth_radius / resolution）
+step_window: 0.5             # m，阶梯检测窗口边长
+
+# ---- 降落区尺寸 ----
+landing_size: 0.5            # m，降落区正方形边长
+landing_height_range_threshold: 0.05  # m，整个降落面(landing_size窗口)内允许的最大高差，更保守地排除坑洼区
+landing_safety_margin: 0.1   # m，在落区外额外检查一圈缓冲带，避免坑洞/坡边贴着落区边缘
+landing_valid_ratio_threshold: 0.98  # 落区+缓冲带内，可靠栅格占比下限
+
+# ============================================================
+# ---- Depression 凹陷度专项检测参数 ----
+#
+# 算法三步流程：
+#   Step-1  depression_raw  = max(0, bg_mean - elevation)   单位：m
+#           正值 = 该点低于周围背景高度的深度（凹陷深度）
+#           0    = 平地或凸起（对降落无害）
+#
+#   Step-2  depression_norm ∈ [0,1]   鲁棒归一化（Robust Scaler）
+#           基于全图 P5~P95 百分位数映射，消除不同地形绝对深度差异的影响
+#           0 = 最浅（与全图最浅凹陷相当）
+#           1 = 最深（全图最深坑洼）
+#           0.3 对应：比全图 70% 的凹陷更浅 → 安全
+#
+#   Step-3  depression_score ∈ [0,1]  区域凹陷得分（滑窗最大值）
+#           以每个格子为中心，取 score_window×score_window 窗口内
+#           depression_norm 的最大值
+#           语义："以该点为降落中心，落区内最严重凹陷的归一化程度"
+#           判断：depression_score < depression_score_threshold → 该区域平整良好，允许降落
+# ============================================================
+
+# 背景均值窗口半径（m）
+#   用于 Step-1 估计"无坑时正常地面高度"
+#   应大于场景中最大预期坑洼的半径
+#   太小：背景均值本身被坑影响，低估凹陷深度
+#   太大：跨越不同地形区域，引入系统误差
+depression_bg_radius: 1.0
+
+# 区域凹陷得分滑窗边长（m）
+#   用于 Step-3，对应降落区尺寸
+#   建议与 landing_size 保持一致或略大（覆盖整个落脚范围）
+depression_score_window: 1.0
+
+# 区域凹陷得分阈值
+#   < 此值：落区内最严重凹陷在全图排名前30%（浅坑），判定为平整良好，允许降落
+#   调参指导：
+#     0.2 = 严格（只允许非常浅的坑）
+#     0.3 = 推荐默认（平衡安全与可用降落面积）
+#     0.5 = 宽松（允许中等深度的坑洼）
+depression_score_threshold: 0.3
+
+# 鲁棒归一化百分位数（通常无需修改）
+#   lo=0.05 忽略最浅的 5% 样本（噪声平地）
+#   hi=0.95 忽略最深的 5% 样本（极端离群坑洼）
+#   调窄（如 0.1/0.9）：归一化范围更集中，对中间值分辨率更高
+#   调宽（如 0.01/0.99）：覆盖更多极端值，但受噪声影响增大
+depression_percentile_lo: 0.05
+depression_percentile_hi: 0.95
+
+# ---- 可视化层开关 ----
+publish_slope_viz: true
+publish_roughness_viz: true
+publish_landing_viz: true
+
+# 凹陷度三个图层的发布开关
+#   调试时全开，便于在 RViz 中观察每步的中间结果
+#   生产部署时可关闭 raw/norm 节省 ROS 话题带宽，只保留 score
+publish_depression_raw_viz: true     # depression_raw：原始凹陷深度（m），直观看绝对坑深
+publish_depression_norm_viz: true    # depression_norm：归一化后的相对凹陷等级 [0,1]
+publish_depression_score_viz: true   # depression_score：区域凹陷得分，用于降落决策
+
+# landing_score 图层：通过全部约束的格子的综合安全得分 [0,1]
+#   分数越高 = 坡度更小 + 阶梯更小 + 凹陷更浅 → 越适合降落
+#   状态机可用此图层做「距离 + 安全性」加权选点，而非仅按最近原则
+#   关闭可节省少量带宽（landing_center 图层仍有 0/1 二值信息）
+publish_landing_score_viz: true
+
+# ============================================================
+# ---- landing_score 内部权重（可调参，权重之和建议为 1.0）----
+#
+# 四项指标对最终综合得分的贡献比例：
+#   landing_score = w_slope*(1-slope/slope_t)
+#                 + w_step *(1-step /step_t )
+#                 + w_dep  *(1-dep_score    )
+#                 + w_rough*(1-rough/rough_t)
+#
+# 调参建议：
+#   - 优先保证斜坡和阶梯安全（w_slope + w_step 占主体）
+#   - 凹陷检测已通过 depression_score_threshold 硬约束过滤，
+#     权重可适度降低；若地形坑洼很多则调高 w_dep
+#   - 粗糙度通常是最次要因素
+# ============================================================
+landing_score_w_slope: 0.35   # 坡度权重（越平坦得分越高）
+landing_score_w_step:  0.30   # 阶梯权重（越无台阶得分越高）
+landing_score_w_dep:   0.25   # 凹陷权重（越无坑洼得分越高）
+landing_score_w_rough: 0.10   # 粗糙度权重（越光滑得分越高）

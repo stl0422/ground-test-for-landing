@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>fast_lio_global_grid_map</name>
+  <version>0.0.1</version>
+  <description>Build a dynamically expanding global 2.5D grid map from FAST-LIO point clouds.</description>
+
+  <maintainer email="tiam@example.com">tiam</maintainer>
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>grid_map_core</depend>
+  <depend>grid_map_msgs</depend>
+  <depend>grid_map_ros</depend>
+  <depend>pcl_conversions</depend>
+  <depend>pcl_ros</depend>
+  <depend>roscpp</depend>
+  <depend>sensor_msgs</depend>
+
+  <exec_depend>grid_map_visualization</exec_depend>
+  <exec_depend>rviz</exec_depend>
+</package>

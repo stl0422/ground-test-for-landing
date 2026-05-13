@@ -1,0 +1,53 @@
+# (x,y,z,yaw)
+takeoff_point: [0.0, 0.0, 2.5, 0]  # 起飞点
+
+# 障碍块预设点
+structured_obstacle: 
+  - [11.0, -1.0, 2.5, 0]    # 第一个障碍块
+  - [16.0, -8.0, 2.5, 270]  # 第三组障碍块
+  - [11.0, -15,  2.5, 270]  # 第三组障碍块
+  - [2,    -15.0,2.5, 180]  # 第三组障碍块
+
+# 森林、风区预设点
+forest:
+  - [2, -15.0, 2.5, 180]  # 第三组障碍块
+
+# ===========================================================================
+# safeland 安全降落配置
+# ===========================================================================
+# safeland_topic: safeland 节点输出的 grid_map 话题名
+safeland_topic:    /safeland/grid_map
+
+# safeland_layer:  grid_map 中标记可降落区域的图层名（值=1.0 表示可降落）
+safeland_layer:    landing_center
+
+# safeland_timeout: 巡航完成后等待 safeland 给出有效降落点的超时秒数
+#   超时后回退到最后一个巡航航点原地降落
+safeland_timeout:  30.0
+
+# safeland_max_dist: 最优降落点搜索半径（m），0 = 不限制（全图搜索最近点）
+#   设一个合理值（如 5.0）可避免选到距当前位置很远的落点
+safeland_max_dist: 0.0
+
+# safeland_land_z: 最终着地的 camera_init 系 z 坐标（对应仿真地面高度）
+#   注：goal_frame_id 已改为 camera_init，与 FAST-LIO/safeland 坐标系统一
+safeland_land_z:   0.0
+
+# ===========================================================================
+# 综合得分选点参数
+# ===========================================================================
+# 状态机用以下加权公式从 landing_center=1 的格子中选最优降落点：
+#   composite = (1 - w) * (1 - dist_norm) + w * safety_score
+#   w=0 → 纯最近距离；w=1 → 纯安全性最高；推荐 0.3~0.5
+#
+# safeland_score_layer:  safeland 发布的安全得分图层名（需与 safeland 配置一致）
+# safeland_score_weight: 安全性权重 [0,1]，默认 0.4（60% 距离 + 40% 安全）
+safeland_score_layer:    landing_score
+safeland_score_weight:   0.4
+
+# ===========================================================================
+# 降落阶段超时保护
+# ===========================================================================
+# ST_LAND 状态下若 land_timeout_secs 秒内飞控既未自动上锁也未贴地，
+# 则强制 disarm 并进入 ST_DONE，防止 AUTO.LAND 异常时状态机永久卡死
+land_timeout_secs: 30.0

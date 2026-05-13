@@ -1,0 +1,63 @@
+common:
+    lid_topic:  "/livox/lidar"
+    imu_topic:  "/livox/imu"
+    relocal_odom_topic: "/localization_odom"
+    time_sync_en: false         # ONLY turn on when external time synchronization is really not possible
+    time_offset_lidar_to_imu: 0.0 # Time offset between lidar and IMU calibrated by other algorithms, e.g. LI-Init (can be found in README).
+                                  # This param will take effect no matter what time_sync_en is. So if the time offset is not known exactly, please set as 0.0
+
+preprocess:
+    lidar_type: 1                # 1 for Livox serials LiDAR, 2 for Velodyne LiDAR, 3 for ouster LiDAR, 
+    scan_line: 4
+    blind: 0.1 # 0.5
+
+mapping:
+    acc_cov: 0.1
+    gyr_cov: 0.1
+    b_acc_cov: 0.0001
+    b_gyr_cov: 0.0001
+    fov_degree:    360
+    det_range:     100.0
+    extrinsic_est_en:  false      # true: enable the online estimation of IMU-LiDAR extrinsic
+
+    # ===========================================================================
+    # 安装方式：mid360 倒装在飞机正下方，朝下安装，并向机头（+X）方向前倾 30°
+    # Gazebo SDF livox_base pose: x=0 y=0 z=-0.045  rpy=(π, -π/6, 0)
+    #   roll=π  → 雷达 Z 轴翻转朝下
+    #   pitch=-π/6 → 在朝下基础上向机头前倾 30°
+    #
+    # extrinsic 说明：
+    #   extrinsic_T / extrinsic_R 描述的是 LiDAR 传感器坐标系相对 IMU 坐标系
+    #   的固有内部几何关系（由 mid360 硬件决定），与飞机安装方向无关。
+    #   外部安装倾角已在 Gazebo SDF（仿真）或实机 URDF/安装夹具中体现，
+    #   FAST-LIO 通过 IMU 实测重力方向自动感知飞机姿态，无需在此处编码安装角。
+    #
+    # extrinsic_T: LiDAR 光学中心在 IMU 坐标系下的位置 [m]
+    #   mid360 规格：IMU 在 LiDAR 系下偏移 (+0.011, +0.02329, +0.105588)
+    #   → LiDAR 在 IMU 系下偏移 = -T_imu_in_lidar (R≈I 时) = (-0.011, -0.02329, -0.105588+0.15) ≈ (-0.011, -0.02329, 0.04412)
+    #
+    # extrinsic_R: LiDAR 轴到 IMU 轴的旋转 (mid360 两轴基本对齐, R=I)
+    # ===========================================================================
+    extrinsic_T: [ -0.011, -0.02329, 0.04412 ] # LiDAR 相对 IMU 的平移（传感器固有内参，与安装方向无关）
+    extrinsic_R: [ 1, 0, 0,   # LiDAR 相对 IMU 的旋转（mid360 两轴基本对齐，R=I）
+                   0, 1, 0,
+                   0, 0, 1]
+    gravity: [0.0, 0.0, -9.810]
+    gravity_init: [0.0, 0.0, -9.810] # preknown gravity for unstationary start
+
+publish:
+    path_en:  true
+    scan_publish_en:  true       # false: close all the point cloud output
+    dense_publish_en: true       # false: low down the points number in a global-frame point clouds scan.
+    scan_bodyframe_pub_en: true  # true: output the point cloud scans in IMU-body-frame
+
+pcd_save:
+    # pcd_save_en: 在线建图保存 PCD 开关
+    #   true  = 建图结束（节点退出）时，将全局点云自动保存为 .pcd 文件
+    #           保存路径：<fast_lio包目录>/PCD/scans.pcd（相对启动目录）
+    #   false = 不保存（离线 PCD 已存在时可关闭，节省磁盘）
+    # 保存的点云坐标系为 camera_init（FAST-LIO 世界系），可直接供
+    # global_grid_map_node 以 pcd_mode=offline 加载，无需额外坐标变换。
+    pcd_save_en: true
+    interval: -1                 # -1 : 所有帧保存为单一 .pcd 文件（建图完整性最高）
+                                 # N>0 : 每 N 帧保存一个文件（大场景防内存溢出时使用）

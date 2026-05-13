@@ -1,0 +1,57 @@
+safeland_filters:
+  # 归一化 buffer 起始索引，部分滤波器（如 CurvatureFilter）要求此步
+  - name: buffer_normalizer
+    type: gridMapFilters/BufferNormalizerFilter
+
+  # 用 OpenCV inpaint 填补 elevation 中的 NaN 空洞
+  # radius 需 >= 2x resolution 才能有效覆盖相邻空洞
+  - name: inpaint
+    type: gridMapCv/InpaintFilter
+    params:
+      input_layer: elevation
+      output_layer: elevation_inpainted
+      radius: 0.3
+
+  # 均值平滑，作为 roughness 计算的参考平面
+  # radius 需覆盖至少 3 个格子才有平滑效果
+  - name: mean_in_radius
+    type: gridMapFilters/MeanInRadiusFilter
+    params:
+      input_layer: elevation_inpainted
+      output_layer: elevation_smooth
+      radius: 0.3
+
+  # 由填洞后的高程估算表面法向量
+  # radius 必须 > resolution，否则邻域内不足以拟合平面
+  - name: surface_normals
+    type: gridMapFilters/NormalVectorsFilter
+    params:
+      input_layer: elevation_inpainted
+      output_layers_prefix: normal_vectors_
+      radius: 0.3
+      normal_vector_positive_axis: z
+
+  # 坡度 = 法向量 z 分量的反余弦（与竖直方向夹角，单位 rad）
+  - name: slope
+    type: gridMapFilters/MathExpressionFilter
+    params:
+      output_layer: slope
+      expression: acos(normal_vectors_z)
+
+  # 粗糙度 = 原始高程与平滑高程的绝对差
+  - name: roughness
+    type: gridMapFilters/MathExpressionFilter
+    params:
+      output_layer: roughness
+      expression: abs(elevation_inpainted - elevation_smooth)
+
+  # 阶梯/台阶 = 滑窗内最大高程 - 最小高程
+  - name: step
+    type: gridMapFilters/SlidingWindowMathExpressionFilter
+    params:
+      input_layer: elevation_inpainted
+      output_layer: step
+      expression: maxOfFinites(elevation_inpainted) - minOfFinites(elevation_inpainted)
+      compute_empty_cells: false
+      edge_handling: crop
+      window_length: 0.5

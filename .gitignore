@@ -1,0 +1,80 @@
+# ============================================================
+# 编译产物
+# ============================================================
+PX4_Firmware/build/
+costmap_ws/devel/
+costmap_ws/build/
+costmap_ws/logs/
+iros_challenge/devel/
+iros_challenge/build/
+iros_challenge/logs/
+
+# ============================================================
+# PX4_Firmware 和 iros_challenge 是独立仓库，作为目录引入
+# 只跟踪我们修改过的关键文件，忽略其余内容
+# ============================================================
+# 忽略 PX4_Firmware 整体（体积 2.8G，有独立 .git）
+PX4_Firmware/*
+# 但保留我们修改过的文件
+!PX4_Firmware/launch/
+!PX4_Firmware/launch/livox_custom.launch
+!PX4_Firmware/launch/livox.launch
+!PX4_Firmware/launch/posix_sitl.launch
+!PX4_Firmware/Tools/
+!PX4_Firmware/Tools/sitl_gazebo/
+!PX4_Firmware/Tools/sitl_gazebo/models/
+!PX4_Firmware/Tools/sitl_gazebo/models/neverlost_livox_custom/
+!PX4_Firmware/Tools/sitl_gazebo/models/neverlost_livox_custom/neverlost_livox_mid360_custom.sdf
+
+# 忽略 iros_challenge 整体（有独立 .git）
+iros_challenge/*
+# 但保留我们修改过的文件和目录
+!iros_challenge/src/
+!iros_challenge/src/FAST_LIO/
+!iros_challenge/src/FAST_LIO/config/
+!iros_challenge/src/FAST_LIO/config/mid360.yaml
+!iros_challenge/src/FAST_LIO/launch/
+!iros_challenge/src/FAST_LIO/launch/mapping_mid360.launch
+!iros_challenge/src/FAST_LIO/src/
+!iros_challenge/src/FAST_LIO/src/fast_lio_px4.cpp
+!iros_challenge/src/state_machine/
+!iros_challenge/src/state_machine/scripts/
+!iros_challenge/src/state_machine/scripts/iros_state_machine_simple.py
+!iros_challenge/src/state_machine/config/
+!iros_challenge/src/state_machine/config/zh_sim.yaml
+!iros_challenge/src/state_machine/launch/
+!iros_challenge/src/state_machine/launch/iros_state_machine_simple_sim.launch
+!iros_challenge/src/super_planner/
+!iros_challenge/src/super_planner/config/
+!iros_challenge/src/super_planner/config/iros_offline.yaml
+!iros_challenge/src/super_planner/launch/
+!iros_challenge/src/super_planner/launch/iros_real.launch
+!iros_challenge/src/mpc_control/
+!iros_challenge/src/mpc_control/launch/
+!iros_challenge/src/mpc_control/launch/control_sim_iros2025.launch
+!iros_challenge/src/mpc_control/launch/tracking_real_iros2025.py
+!iros_challenge/start_online.sh
+!iros_challenge/start_offline.sh
+
+# ============================================================
+# 大型二进制 / 数据文件
+# ============================================================
+*.pcd
+*.bag
+*.pyc
+__pycache__/
+*.so
+*.a
+*.o
+*.bin
+*.elf
+*.hex
+
+# ============================================================
+# 日志 / 临时文件
+# ============================================================
+*.log
+*.tmp
+*.swp
+*~
+.DS_Store

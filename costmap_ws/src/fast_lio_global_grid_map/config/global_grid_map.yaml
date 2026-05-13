@@ -1,0 +1,83 @@
+input_cloud_topic: /cloud_registered
+map_frame: camera_init
+
+grid_map_topic: /global_grid_map
+debug_cloud_topic: /global_grid_map/points
+
+elevation_layer: elevation
+sum_layer: sum_z   # 每个栅格累计的 z 和
+count_layer: count # 每个栅格累计点数
+
+publish_rate: 5.0           # 栅格地图发布频率（Hz）
+# cell_count_threshold：单格最多累积点数；达到上限后冻结，不再用新点更新
+#   0 = 不限制（全量累加取均值，推荐用于坑洼/凹陷检测场景）
+#       原因：坑底点云稀疏，若限制点数上限（如20），早期帧中混入的坑壁反射点
+#             会把均值拉高，造成坑底高程虚高，凹陷深度被低估，严重时漏检。
+#             全量累加（阈值=0）让高程持续收敛到真实均值，凹陷检测更准确。
+#   N>0 = 每格最多 N 帧更新后冻结（仅适合已知平坦地形的快速稳定场景，
+#          坑洼检测场景不推荐使用）
+cell_count_threshold: 0
+subscriber_queue_size: 1    # 在线模式订阅输入点云的队列大小
+publish_debug_cloud: false  # 是否额外发布 /global_grid_map/points，调试用
+min_valid_z: -1.8           # 滤除低于该高度的点（m，相对世界系原点）
+
+# max_valid_z：高度上限过滤（m）
+#   超过此高度的点被直接丢弃，不进入高程图
+#   用途：避免树冠、建筑物外墙、架空线缆等非地面反射污染高程图
+#   推荐值：
+#     1.0  — 室外平坦地形（地面通常在 ±0.5 m 内）
+#     2.0  — 地形起伏较大或有矮灌木的场景
+#    -999  — 关闭上限（室内或已知环境无高大障碍物时使用）
+max_valid_z: 1.0
+
+resolution: 0.10            # 栅格分辨率（m/格），越小越精细，但内存和计算量增加
+
+voxel_leaf_size_x: 0.05     # 体素降采样大小（m）
+voxel_leaf_size_y: 0.05     # 经验：voxel_leaf ≈ resolution 或略小，保留地面细节
+voxel_leaf_size_z: 0.05
+
+initial_padding_x: 10.0     # 第一帧初始化地图时，点云包围盒外额外加的边界（m）
+initial_padding_y: 10.0
+expand_margin_x: 8.0        # 点云超出地图时自动扩图的额外裕量（m）
+expand_margin_y: 8.0
+
+# ===========================================================================
+# PCD 工作模式（pcd_mode）
+# ===========================================================================
+#
+#   "online"  (默认) — 仅订阅 /cloud_registered 实时流，与原版完全一致
+#   "offline"        — 启动时一次性加载 pcd_path 指定的 .pcd 文件，不订阅实时点云
+#                      适用场景：已完成建图、希望用历史地图直接做 safeland 分析
+#   "both"           — 先加载离线 PCD 作为初始底图，再叠加在线流增量更新
+#                      适用场景：使用预建地图并在降落前继续细化
+#
+# 离线模式坐标系说明：
+#   FAST-LIO 保存的 .pcd（pcd_save_en: true）已在世界系（camera_init），
+#   直接可用，pcd_body_frame 无需设为 true。
+#   若导入的是原始雷达扫描帧（LiDAR body frame），则需：
+#     pcd_body_frame: true
+#     pcd_extrinsic_T / pcd_extrinsic_R: 填写 LiDAR→world 变换参数
+# ===========================================================================
+pcd_mode: online
+
+# pcd_path: 离线 .pcd 文件绝对路径（pcd_mode=offline 或 both 时有效）
+# 示例：/root/catkin_ws/src/FAST_LIO/maps_pcd/kdxt_world_downsampled.pcd
+pcd_path: ""
+
+# pcd_frame_id: 离线 PCD 的坐标系名（应与 map_frame 一致）
+pcd_frame_id: camera_init
+
+# pcd_body_frame: false = PCD 已在世界系（FAST-LIO 输出的默认情况）
+#                 true  = PCD 在雷达本体系，需要用 pcd_extrinsic_R/T 做变换
+pcd_body_frame: false
+
+# pcd_extrinsic_T: 雷达→世界 的平移 [x, y, z]（仅 pcd_body_frame=true 时生效）
+pcd_extrinsic_T: [0.0, 0.0, 0.0]
+
+# pcd_extrinsic_R: 雷达→世界 的旋转矩阵（行主序 3×3，仅 pcd_body_frame=true 时生效）
+#   mid360 倒装前倾 30°（SDF rpy = π, -π/6, 0）时：
+#     R_body_to_world = Ry(-30°) · Rx(180°)
+#   通常 FAST-LIO 已把这个外参折算到输出点云里，此处填 I 即可
+pcd_extrinsic_R: [1.0, 0.0, 0.0,
+                  0.0, 1.0, 0.0,
+                  0.0, 0.0, 1.0]

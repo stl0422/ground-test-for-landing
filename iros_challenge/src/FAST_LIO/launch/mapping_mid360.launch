@@ -1,0 +1,28 @@
+<launch>
+<!-- Launch file for Livox MID360 LiDAR
+     安装方式：mid360 倒装于飞机正下方，朝下安装并向机头（+X）方向前倾 30°
+     SDF pose: x=0 y=0 z=-0.045  rpy=(π, -π/6, 0)
+     外参 extrinsic_T/R 见 config/mid360.yaml — 描述传感器内部固有几何，与安装角无关
+     FAST-LIO 通过 IMU 实测重力方向自动建立正确的世界坐标系，无需在此配置安装倾角 -->
+
+	<arg name="rviz" default="true" />
+
+	<rosparam command="load" file="$(find fast_lio)/config/mid360.yaml" />
+
+	<param name="feature_extract_enable" type="bool" value="0"/>
+	<!-- 雷达朝下扫描地面，点云密度高，适当降采样 -->
+	<param name="point_filter_num" type="int" value="1"/>
+	<param name="max_iteration" type="int" value="3" />
+	<!-- 地面扫描场景：surf/map 滤波尺寸可适当减小以保留更多地面细节 -->
+	<param name="filter_size_surf" type="double" value="0.2" />
+	<param name="filter_size_map" type="double" value="0.2" />
+	<param name="cube_side_length" type="double" value="1000" />
+	<param name="runtime_pos_log_enable" type="bool" value="1" />
+    <node pkg="fast_lio" type="fastlio_mapping" name="laserMapping" output="screen" /> 
+	<param name="use_relocal_odom" type="bool" value="0" /> <!--1-->
+
+	<group if="$(arg rviz)">
+	<node launch-prefix="nice" pkg="rviz" type="rviz" name="rviz" args="-d $(find fast_lio)/rviz_cfg/loam_livox.rviz" />
+	</group>
+
+</launch>

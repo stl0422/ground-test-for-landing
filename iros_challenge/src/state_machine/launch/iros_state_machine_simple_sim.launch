@@ -1,0 +1,91 @@
+<launch>
+  <node pkg="state_machine" type="iros_state_machine_simple.py"
+        name="iros_state_machine_simple" output="screen">
+
+    <!-- ══════════════════════════════════════════════════════════════
+         飞行容差参数
+    ══════════════════════════════════════════════════════════════ -->
+    <!-- 与 FAST-LIO / safeland/grid_map 坐标系对齐（camera_init = world系）-->
+    <param name="goal_frame_id"   value="camera_init" />
+    <param name="takeoff_xy_tol"  value="0.5"  />
+    <param name="takeoff_z_tol"   value="0.35" />
+    <param name="cruise_xy_tol"   value="0.5"  />
+    <param name="cruise_z_tol"    value="0.5"  />
+    <param name="land_xy_tol"     value="0.35" />
+    <param name="land_z_tol"      value="0.2"  />
+
+    <!-- ══════════════════════════════════════════════════════════════
+         safeland 接口参数
+    ══════════════════════════════════════════════════════════════ -->
+    <!-- safeland 节点输出的 grid_map 话题 -->
+    <param name="safeland_topic"    value="/safeland/grid_map" />
+    <!-- 用于提取降落点的图层名 -->
+    <param name="safeland_layer"    value="landing_center"     />
+    <!-- 候选降落点最大搜索半径（m），0=全图最近 -->
+    <param name="safeland_max_dist" value="0.0"                />
+    <!-- 等待 safeland 结果的超时（s），超时后在最后一个航点原地降落 -->
+    <param name="safeland_timeout"  value="30.0"               />
+    <!-- 最终着地高度（camera_init 系 z，对应仿真地面） -->
+    <param name="safeland_land_z"   value="0.0"                />
+
+    <!-- ── 综合得分选点参数 ───────────────────────────────────────────
+         safeland 节点现在同时发布 landing_center（二值图）和
+         landing_score（综合安全得分 [0,1]）两个图层。
+         状态机用如下加权公式选最优降落点：
+           composite = (1-w)*(1-dist_norm) + w*safety_score
+         w=0  → 纯最近距离；w=1 → 纯安全性最高；默认 0.4（近优先）
+    ─────────────────────────────────────────────────────────────── -->
+    <!-- 安全得分图层名（与 safeland 发布的图层名对应）-->
+    <param name="safeland_score_layer"  value="landing_score" />
+    <!-- 安全性权重 [0,1]：0=纯距离，1=纯安全，推荐 0.3~0.5 -->
+    <param name="safeland_score_weight" value="0.4"           />
+
+    <!-- ══════════════════════════════════════════════════════════════
+         在线建图 终止条件 参数
+         ——————————————————————————————————————————————————————————
+         说明：在线模式下，无人机边飞边建图，landing_center 图层随雷达
+         扫描不断扩充。状态机每帧都评估以下两个条件，同时满足则"提前
+         终止巡航"，不必飞完所有航点，立即进入降落决策阶段。
+
+         条件①  map_mature_min_cells
+           landing_center=1 的栅格总数 ≥ 此值
+           含义：已发现的可降落面积足够大
+           分辨率 0.1m → 20 cells ≈ 0.2 m²（约 0.5×0.5 m 落脚区）
+           调参：场景越大/要求越高 → 调大；快速验证 → 调小
+
+         条件②  map_stable_window + map_stable_delta_ratio
+           在最近 map_stable_window 秒内，landing_center 栅格数
+           的变化率 (max-min)/max < map_stable_delta_ratio
+           含义：可降落区域不再快速增长，地图已趋于稳定
+           0.05 = 窗口内变化 < 5%，说明建图已基本收敛
+
+         进入等待阶段后的确认窗口  safeland_confirm_secs
+           再等待此时长，让 safeland 节点多刷新几帧（确认目标稳定），
+           然后才真正飞往降落点。建议 ≥ 2 × safeland 发布周期。
+    ══════════════════════════════════════════════════════════════ -->
+
+    <!-- landing_center 最小栅格数（0=禁用提前终止，必须飞完所有航点）-->
+    <param name="map_mature_min_cells"    value="20"   />
+
+    <!-- 稳定性评估滑窗时长（秒）-->
+    <param name="map_stable_window"       value="5.0"  />
+
+    <!-- 稳定性变化率阈值 [0,1]，(max-min)/max < 此值认为稳定 -->
+    <param name="map_stable_delta_ratio"  value="0.05" />
+
+    <!-- 进入 WAIT_SAFELAND 后的额外确认等待时间（秒）-->
+    <param name="safeland_confirm_secs"   value="2.0"  />
+
+    <!-- ══════════════════════════════════════════════════════════════
+         降落阶段超时保护
+         ——————————————————————————————————————————————————————————
+         ST_LAND 进入后若在 land_timeout_secs 秒内飞控既未自动上锁
+         也未贴地（z < safeland_land_z + 0.12 m），则强制 disarm 并
+         结束任务，防止 AUTO.LAND 异常时状态机永久卡死。
+         建议设置为：垂直下降时间的 2~3 倍（通常 20~40s 足够）。
+    ══════════════════════════════════════════════════════════════ -->
+    <!-- ST_LAND 最终超时保护（秒），超时强制 disarm -->
+    <param name="land_timeout_secs"       value="30.0" />
+
+  </node>
+</launch>

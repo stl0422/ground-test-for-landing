@@ -1,0 +1,46 @@
+<?xml version="1.0" ?>
+<sdf version="1.6">
+  <model name="nagetive_terrain">
+    <static>true</static>
+    <link name="link">
+      <!-- 顶面与默认地面均在 z=0 会 Z-fighting 闪烁；整体上移 2mm -->
+      <pose>0 0 0.002 0 0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <mesh>
+            <uri>model://nagetive_terrain/meshes/pitted_ground_15x15x2_36holes.dae</uri>
+            </mesh>
+        </geometry>
+        <surface>
+          <friction>
+            <ode>
+              <mu>0.9</mu>
+              <mu2>0.9</mu2>
+            </ode>
+          </friction>
+          <contact>
+            <ode>
+              <kp>1e8</kp>
+              <kd>1</kd>
+            </ode>
+          </contact>
+        </surface>
+      </collision>
+
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>model://nagetive_terrain/meshes/pitted_ground_15x15x2_36holes.dae</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <ambient>0.30 0.30 0.32 1</ambient>
+          <diffuse>0.56 0.56 0.60 1</diffuse>
+          <specular>0.095 0.095 0.10 1</specular>
+          <emissive>0 0 0 1</emissive>
+        </material>
+      </visual>
+
+    </link>
+  </model>
+</sdf>

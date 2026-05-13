@@ -1,0 +1,38 @@
+<launch>
+  <arg name="config_file"          default="$(find safeland)/config/safeland.yaml" />
+  <arg name="visualization_config" default="$(find safeland)/config/safeland_visualization.yaml" />
+  <arg name="rviz_config"          default="$(find safeland)/rviz/safeland.rviz" />
+  <arg name="open_rviz"            default="true" />
+
+  <!-- 输入/输出话题（可从命令行覆盖） -->
+  <!-- input  来自 global_grid_map_node 发布的 /global_grid_map           -->
+  <!-- output 供状态机订阅，默认 /safeland/grid_map                        -->
+  <arg name="input_grid_map_topic"  default="/global_grid_map"      />
+  <arg name="output_grid_map_topic" default="/safeland/grid_map"    />
+
+  <!-- Safeland 分析节点 -->
+  <node pkg="safeland" type="safeland_node" name="safeland_node" output="screen">
+    <rosparam command="load" file="$(arg config_file)" />
+    <!-- 允许从命令行覆盖话题，无需每次改 yaml -->
+    <param name="input_grid_map_topic"  value="$(arg input_grid_map_topic)"  />
+    <param name="output_grid_map_topic" value="$(arg output_grid_map_topic)" />
+  </node>
+
+  <!-- grid_map 可视化节点（订阅 output_grid_map_topic）-->
+  <node pkg="grid_map_visualization"
+        type="grid_map_visualization"
+        name="safeland_visualization"
+        output="screen">
+    <rosparam command="load" file="$(arg visualization_config)" />
+    <!-- 确保可视化节点订阅与 safeland 输出一致的话题 -->
+    <param name="grid_map_topic" value="$(arg output_grid_map_topic)" />
+  </node>
+
+  <!-- 独立 RViz 窗口 -->
+  <node if="$(arg open_rviz)"
+        pkg="rviz"
+        type="rviz"
+        name="safeland_rviz"
+        args="-d $(arg rviz_config)"
+        output="screen" />
+</launch>
