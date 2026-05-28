@@ -32,7 +32,7 @@ PX4 + Gazebo + MAVROS
 
 - `src/iros_challenge`: flight logic, state machine, planner, and control launch files.
 - `src/costmap_ws`: `global_grid_map` and `safeland` terrain evaluation stack.
-- `PX4_Firmware`: PX4 launch and simulator integration files.
+- `PX4_Firmware`: PX4 launch and simulator integration files used by `start_online.sh`.
 - `tools/marsim`: offline configuration generation, batch evaluation, and metrics scripts.
 
 ## Online Start
@@ -43,6 +43,32 @@ chmod +x start_online.sh stop_online.sh
 ```
 
 This script opens each module in its own terminal and writes logs to `start_online_logs/`.
+
+### PX4 assets used by `start_online.sh`
+
+The online launcher depends on these repository-local PX4 assets:
+
+- `PX4_Firmware/launch/livox_custom.launch`
+- `PX4_Firmware/Tools/sitl_gazebo/worlds/nagetive_terrain.world`
+- `PX4_Firmware/Tools/sitl_gazebo/models/neverlost_livox_custom/neverlost_livox_mid360_custom.sdf`
+
+The launch chain is:
+
+```text
+start_online.sh
+  -> PX4_Firmware/launch/livox_custom.launch
+  -> PX4 SITL + Gazebo
+  -> Tools/sitl_gazebo/worlds/nagetive_terrain.world
+  -> Tools/sitl_gazebo/models/neverlost_livox_custom/neverlost_livox_mid360_custom.sdf
+  -> FAST-LIO / grid map / safeland / planner / state machine
+```
+
+### Expected environment
+
+- ROS Noetic
+- PX4 build tree available in the local workspace
+- Gazebo and MAVROS installed
+- `gnome-terminal`, `terminator`, or `xterm`
 
 ## Offline Benchmark
 
@@ -56,3 +82,4 @@ See:
 
 - The repo is organized for ground-test landing experiments, not as a minimal code sample.
 - Large generated artifacts such as `build/`, `devel/`, logs, and benchmark outputs are intentionally ignored.
+- `start_online.sh` still assumes your local PX4 workspace paths are available under the same home-directory layout as described in the script comments.
