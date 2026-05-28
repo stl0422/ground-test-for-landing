@@ -1,0 +1,55 @@
+<launch>
+  <arg name="marsim_config" default="/tmp/landing_marsim_offline.yaml" />
+  <arg name="grid_map_config" default="$(find fast_lio_global_grid_map)/config/global_grid_map.yaml" />
+  <arg name="grid_map_viz_config" default="$(find fast_lio_global_grid_map)/config/visualization.yaml" />
+  <arg name="safeland_config" default="$(find safeland)/config/safeland.yaml" />
+  <arg name="open_rviz" default="true" />
+  <arg name="map_frame" default="world" />
+  <arg name="input_cloud_topic" default="/global_pc" />
+  <arg name="publish_camera_init_tf" default="true" />
+
+  <node if="$(arg publish_camera_init_tf)"
+        pkg="tf2_ros"
+        type="static_transform_publisher"
+        name="world_to_camera_init"
+        args="0 0 0 0 0 0 world camera_init" />
+
+  <node pkg="perfect_drone_sim"
+        type="perfect_drone"
+        name="perfect_drone"
+        output="screen">
+    <param name="config_path" value="$(arg marsim_config)" />
+  </node>
+
+  <node pkg="topic_tools"
+        type="relay"
+        name="marsim_odom_to_drone_odometry"
+        args="/lidar_slam/odom /drone_odometry"
+        output="screen" />
+
+  <node pkg="fast_lio_global_grid_map"
+        type="global_grid_map_node"
+        name="global_grid_map_node"
+        output="screen">
+    <rosparam command="load" file="$(arg grid_map_config)" />
+    <param name="input_cloud_topic" value="$(arg input_cloud_topic)" />
+    <param name="map_frame" value="$(arg map_frame)" />
+    <param name="pcd_mode" value="online" />
+    <param name="publish_debug_cloud" value="false" />
+  </node>
+
+  <node pkg="grid_map_visualization"
+        type="grid_map_visualization"
+        name="global_grid_map_visualization"
+        output="screen">
+    <rosparam command="load" file="$(arg grid_map_viz_config)" />
+    <param name="grid_map_topic" value="/global_grid_map" />
+  </node>
+
+  <include file="$(find safeland)/launch/safeland.launch">
+    <arg name="config_file" value="$(arg safeland_config)" />
+    <arg name="open_rviz" value="$(arg open_rviz)" />
+    <arg name="input_grid_map_topic" value="/global_grid_map" />
+    <arg name="output_grid_map_topic" value="/safeland/grid_map" />
+  </include>
+</launch>

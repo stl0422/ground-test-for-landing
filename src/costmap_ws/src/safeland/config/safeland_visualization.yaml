@@ -1,0 +1,56 @@
+grid_map_topic: /safeland/grid_map
+
+grid_map_visualizations:
+  - name: slope_viz
+    type: occupancy_grid
+    params:
+      layer: slope
+      data_min: 0.0
+      data_max: 0.6
+
+  - name: roughness_viz
+    type: occupancy_grid
+    params:
+      layer: roughness
+      data_min: 0.0
+      data_max: 0.1
+
+  - name: step_viz
+    type: occupancy_grid
+    params:
+      layer: step
+      data_min: 0.0
+      data_max: 0.2
+
+  # depression_score：区域凹陷得分 [0,1]，<0.3 为平整良好，是降落决策关键图层
+  - name: depression_score_viz
+    type: occupancy_grid
+    params:
+      layer: depression_score
+      data_min: 0.0
+      data_max: 1.0
+
+  # flatness_score：全图连续平整度参考分 [0,1]，可靠格子均有值
+  - name: flatness_score_viz
+    type: occupancy_grid
+    params:
+      layer: flatness_score
+      data_min: 0.0
+      data_max: 1.0
+
+  # landing_center：二值可降落区域（1=通过全部约束，0=不可降落）
+  - name: landing_center_viz
+    type: occupancy_grid
+    params:
+      layer: landing_center
+      data_min: 0.0
+      data_max: 1.0
+
+  # landing_score：综合安全得分 [0,1]，越高越适合降落（仅通过约束的格子有值）
+  # 状态机用此图层做「距离 + 安全性」加权选最优降落点
+  - name: landing_score_viz
+    type: occupancy_grid
+    params:
+      layer: landing_score
+      data_min: 0.0
+      data_max: 1.0

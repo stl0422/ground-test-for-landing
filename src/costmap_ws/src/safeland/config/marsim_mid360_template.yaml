@@ -1,0 +1,28 @@
+pcd_name: "__PCD_PATH__"
+mesh_resource: "package://perfect_drone_sim/meshes/yunque-M.dae"
+
+init_position:
+  x: __INIT_X__
+  y: __INIT_Y__
+  z: __INIT_Z__
+init_roll: __INIT_ROLL__
+init_pitch: __INIT_PITCH__
+init_yaw: __INIT_YAW__
+
+is_360lidar: true
+polar_resolution: __POLAR_RES__
+downsample_res: __DOWNSAMPLE_RES__
+vertical_fov: __VERTICAL_FOV__
+sensing_blind: 0.1
+sensing_horizon: __SENSING_HORIZON__
+sensing_rate: __SENSING_RATE__
+
+#  enum LiDARType{
+#  UNDEFINED = 0,
+#  AVIA = 1,
+#  GENERAL_360 = 2,
+#  MID_360 = 3
+#  };
+lidar_type: __LIDAR_TYPE__
+depth_image_en: false
+print_time_consumption: false

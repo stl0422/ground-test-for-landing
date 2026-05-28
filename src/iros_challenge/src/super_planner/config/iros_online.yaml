@@ -1,0 +1,179 @@
+fsm:
+  click_goal_en: true  #使用click_goal_topic
+  click_goal_topic: "/goal" #目标话题
+  click_height: 1.5  #目标高度（rviz点击）
+  click_yaw_en: true
+  replan_rate: 15.0  # replanTimerCallback 重规划频率
+  cmd_topic: "/planning/pos_cmd"
+  mpc_cmd_topic: "/planning_cmd/poly_traj"
+  timer_en: true #创建三个定时器：，mainFsmTimerCallback  pubCmdTimerCallback  replanTimerCallback
+  
+
+
+super_planner:
+  backup_traj_en: false    #开启备份轨迹  #nouse
+  detailed_log_en: false  #详细log
+  visualization_en: true #//开启可视化
+  use_fov_cut: false  #裁减fov？
+  print_log: false  #//打印log
+  visual_process: false  #//可视化处理
+  frontend_in_known_free: false  #前端在未知边界内？
+  goal_yaw_en: true   #//目标yaw开启
+  goal_vel_en: false  #//目标速度开启
+  corridor_bound_dis: 1.0  #//走廊边界长度（初始化正方体）
+  corridor_line_max_length: 1.0   #//走廊线最大长度
+  safe_corridor_line_max_length: 5.0 #//安全走廊线最大长度
+  iris_iter_num: 2  #//iris迭代次数  nouse
+  obs_skip_num: 2  #障碍物躲避数量？ nouse
+  replan_forward_dt: 0.2  #重规划向前时间
+  planning_horizon: 6.0  #规划界限
+  sensing_horizon: -1  #感知界限
+  receding_dis: 2.0 #//后退距离
+  robot_r: 0.1  #机器人半径
+  yaw_dot_max: 0.5 #//最大yaw角速度
+  # Yaw mode: 1 heading to velocity, 2 heading to goal
+  yaw_mode: 1
+  mpc_horizon: 15 #mpc步数
+
+
+traj_opt:  #轨迹优化参数
+  switch:
+    save_log_en: false  #// 保存日志
+    print_optimizer_log: false #//print优化器日志
+
+  boundary:   #///边界参数
+    max_vel: 1.5
+    max_acc: 1.0
+    max_jerk: 70.0
+    max_omg: 1.0
+    max_acc_thr: 2.0
+    min_acc_thr: 0.1
+    penna_margin: 0.05
+
+  exp_traj:
+    # 1 for xi 2 for pos
+    pos_constraint_type: 1  #//位置约束类型
+    energy_cost_type: 4
+    block_energy_cost: false
+    opt_accuracy: 5.0e-6  #//相对优化终止容差。
+    scale_factor: 1.0
+    integral_reso: 15
+    smooth_eps: 0.01
+    penna_t: 1200.0
+    penna_pos: 5.0e+5
+    penna_vel: 5.0e+4
+    penna_acc: 5.0e+4
+    penna_jerk: -5.0e+4
+    penna_attract: -3.0e+4
+    penna_omg:  5.0e+5
+    penna_max_acc_thr:  5.0e+4
+    penna_min_acc_thr:  5.0e+4
+
+  backup_traj:
+    pos_constraint_type: 1
+    piece_num: 2
+    energy_cost_type: 4
+    block_energy_cost: true
+    opt_accuracy: 1.0e-6
+    scale_factor: 1.0
+    integral_reso: 12
+    smooth_eps: 0.01
+    penna_t: 1200.0
+    penna_ts: 1.0e+5
+    penna_pos: 1.0e+6
+    penna_vel: 1.0e+5
+    penna_acc: 1.0e+5
+    penna_jerk: -1.0e+5
+    penna_omg: 1.0e+5
+    penna_max_acc_thr: 1.0e+5
+    penna_min_acc_thr: 1.0e+5
+
+  flatness:   #//平滑化参数
+    mass: 1.64
+    dh: 0.35
+    dv: 0.35
+    cp: 0.001
+    v_eps: 0.0001
+    grav: 9.81
+
+
+astar:
+  map_voxel_num: [ 500, 500, 100 ]  #地图体素数量
+  visual_process: false  #可视化
+  allow_diag: true  #允许对角线搜索路径
+  # 0 DIAG; 1 MANHATTAN; 2 EUCLIDEAN
+  heu_type: 2   #//启发式函数种类
+  debug_visualization_en: false  #//开启debug可视化
+
+
+rog_map:
+  resolution: 0.05 #分辨率
+  inflation_resolution: 0.15 #//膨胀地图分辨率
+  inflation_step: 2  #膨胀步数
+  unk_inflation_en: false #未知膨胀
+  unk_inflation_step: 1  #未知膨胀步数
+  map_size: [ 20, 20, 8 ] #地图大小
+  # If the map rolling is disable, the map origin [m] should be set.
+  fix_map_origin: [ 0,0,1.5 ]  #固定地图中心（全局中心）
+  frontier_extraction_en: false  ##//边界提取
+
+  # Virtual ceil and ground
+  virtual_ceil_height: 4.0  #虚拟天花板
+  virtual_ground_height: -0.5 #虚拟地面
+
+  # -----------------------------------------------------------------------
+  # 在线模式：不加载历史 PCD，障碍物地图只来自本次 /cloud_registered。
+  # 这样避免把上一次运行保存的 scans.pcd 混入当前仿真地形。
+  # -----------------------------------------------------------------------
+  load_pcd_en: false
+  pcd_name: "/home/fractal/iros_challenge/src/FAST_LIO/PCD/scans.pcd"
+
+  map_sliding: #滑动更新
+    enable: true # 允许滑动更新
+    # The minimum distance [m] to slide the map.
+    threshold: 0.3  ## 滑动更新阈值（odom超过地图中心阈值才更新）
+
+  esdf: #欧式距离场
+    enable: false #开启？
+    resolution: 0.1 #分辨率
+    # The range of esdf around the odom [m].
+    local_update_box: [ 20,20,5 ] #local附近esdf范围
+
+  # If [enable = true], the ROG-Map will actively take ros topic as input.
+  #  else user should call function [updateMap] to update the map.
+  ros_callback: #回调函数
+    enable: true #开启回调  odom cloud timer_update
+    # 离线模式下 /cloud_registered 不存在，rog_map 初始化时已从 PCD 文件加载完整地图。
+    # 订阅此话题不会有数据，但节点不会崩溃（cloudCallback 首行检查 robot_state_.rcv）。
+    cloud_topic: "/cloud_registered"
+    odom_topic: "/drone_odometry"  #位姿输入
+
+    odom_timeout: 2.0  #位姿超时阈值
+
+
+  visualization: #可视化
+    enable: true
+    use_dynamic_reconfigure: false
+    time_rate: 2
+    frame_rate: 0
+    range: [ 20, 20,5 ]
+    frame_id: "world"
+    pub_unknown_map_en: false
+
+  intensity_thresh: -10  #反射率阈值（滤掉）
+  point_filt_num: 1
+
+  # Probabilistc update
+  raycasting:
+    enable: true
+    batch_update_size: 1
+    local_update_box: [ 50,50,10 ]
+    ray_range: [0.5, 999 ]
+
+    p_min: 0.12
+    p_miss: 0.45
+    p_free: 0.499
+    p_occ: 0.85
+    p_hit: 0.9
+    p_max: 0.98
+    unk_thresh: 1.0

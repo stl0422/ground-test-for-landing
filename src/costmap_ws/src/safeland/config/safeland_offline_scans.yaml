@@ -1,0 +1,37 @@
+# Offline-tuned profile for FAST-LIO scans.pcd benchmark.
+input_grid_map_topic: /global_grid_map
+output_grid_map_topic: /safeland/grid_map
+
+slope_threshold: 0.15
+roughness_threshold: 0.05
+step_threshold: 0.10
+min_cell_points: 3.0
+max_valid_z: 1.0
+
+smooth_radius: 0.3
+step_window: 0.5
+
+landing_size: 0.3
+landing_height_range_threshold: 0.05
+landing_safety_margin: 0.0
+landing_valid_ratio_threshold: 0.98
+
+depression_bg_radius: 1.0
+depression_score_window: 1.0
+depression_score_threshold: 0.3
+depression_percentile_lo: 0.05
+depression_percentile_hi: 0.95
+
+publish_slope_viz: true
+publish_roughness_viz: true
+publish_landing_viz: true
+publish_depression_raw_viz: true
+publish_depression_norm_viz: true
+publish_depression_score_viz: true
+publish_flatness_score_viz: true
+publish_landing_score_viz: true
+
+landing_score_w_slope: 0.35
+landing_score_w_step: 0.30
+landing_score_w_dep: 0.25
+landing_score_w_rough: 0.10
