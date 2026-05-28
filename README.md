@@ -35,6 +35,42 @@ PX4 + Gazebo + MAVROS
 - `PX4_Firmware`: PX4 launch and simulator integration files used by `start_online.sh`.
 - `tools/marsim`: offline configuration generation, batch evaluation, and metrics scripts.
 
+### Tree
+
+```text
+.
+├── README.md
+├── start_online.sh
+├── start_offline.sh
+├── stop_online.sh
+├── docs/
+│   └── marsim_offline_integration.md
+├── PX4_Firmware/
+│   ├── launch/
+│   │   └── livox_custom.launch
+│   └── Tools/
+│       └── sitl_gazebo/
+│           ├── worlds/
+│           │   └── nagetive_terrain.world
+│           └── models/
+│               └── neverlost_livox_custom/
+│                   └── neverlost_livox_mid360_custom.sdf
+├── src/
+│   ├── iros_challenge/
+│   │   └── src/
+│   │       ├── FAST_LIO/
+│   │       ├── mpc_control/
+│   │       ├── state_machine/
+│   │       └── super_planner/
+│   └── costmap_ws/
+│       └── src/
+│           ├── fast_lio_global_grid_map/
+│           ├── grid_map/
+│           └── safeland/
+└── tools/
+    └── marsim/
+```
+
 ## Online Start
 
 ```bash
@@ -69,6 +105,14 @@ start_online.sh
 - PX4 build tree available in the local workspace
 - Gazebo and MAVROS installed
 - `gnome-terminal`, `terminator`, or `xterm`
+
+## Online vs Offline
+
+| Mode | Main Input | Main Output | Purpose | Typical Entry |
+| --- | --- | --- | --- | --- |
+| Online simulation | PX4 + Gazebo + MAVROS + live LiDAR mapping | `landing_center`, `landing_score`, landing command | Validate the full closed loop in simulation | `./start_online.sh` |
+| Offline benchmark | Static PCD / MARSIM replay | Safety metrics and landing map evaluation | Tune `safeland` thresholds and compare parameter sets | `./tools/marsim/run_marsim_safeland_offline.sh` |
+| Batch evaluation | Map list + parameter sweep | CSV benchmark results | Compare thresholds across many scans | `./tools/marsim/batch_eval_marsim_safeland.sh` |
 
 ## Offline Benchmark
 
