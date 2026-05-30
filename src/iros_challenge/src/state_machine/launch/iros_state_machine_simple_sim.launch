@@ -28,6 +28,15 @@
     <!-- 最终着地高度（camera_init 系 z，对应仿真地面） -->
     <param name="safeland_land_z"   value="0.0"                />
 
+    <!-- safeland 超时后的备降区，格式 [x, y, z, radius]。
+         这些点避开了当前 nagetive_terrain.world 中的坑洼、凸起和新增障碍。 -->
+    <rosparam param="backup_landing_zones">
+      - [1.5, -0.5, 0.0, 1.0]
+      - [-2.5, 3.5, 0.0, 1.0]
+      - [4.5, -4.5, 0.0, 1.0]
+    </rosparam>
+    <param name="backup_approach_height" value="2.5" />
+
     <!-- ── 综合得分选点参数 ───────────────────────────────────────────
          safeland 节点现在同时发布 landing_center（二值图）和
          landing_score（综合安全得分 [0,1]）两个图层。

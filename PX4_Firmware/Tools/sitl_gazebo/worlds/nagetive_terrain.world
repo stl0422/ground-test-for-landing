@@ -28,5 +28,137 @@
       <pose>0 0 0 0 0 0</pose>
     </include>
 
+    <!-- Moderately sparse obstacle field.
+         Positions are placed on pre-checked locally flat patches and leave
+         multiple 0.5 m x 0.5 m landing footprints clear. -->
+    <model name="landing_tree_01">
+      <static>true</static>
+      <pose>-5.6 -4.4 0.0 0 0 0</pose>
+      <link name="link">
+        <collision name="trunk_collision">
+          <pose>0 0 0.45 0 0 0</pose>
+          <geometry><cylinder><radius>0.11</radius><length>0.9</length></cylinder></geometry>
+        </collision>
+        <visual name="trunk_visual">
+          <pose>0 0 0.45 0 0 0</pose>
+          <geometry><cylinder><radius>0.11</radius><length>0.9</length></cylinder></geometry>
+          <material><ambient>0.28 0.16 0.08 1</ambient><diffuse>0.34 0.20 0.10 1</diffuse></material>
+        </visual>
+        <visual name="canopy_visual">
+          <pose>0 0 1.15 0 0 0</pose>
+          <geometry><sphere><radius>0.45</radius></sphere></geometry>
+          <material><ambient>0.05 0.28 0.08 1</ambient><diffuse>0.08 0.42 0.12 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="landing_tree_02">
+      <static>true</static>
+      <pose>-3.2 5.3 0.0 0 0 0</pose>
+      <link name="link">
+        <collision name="trunk_collision">
+          <pose>0 0 0.55 0 0 0</pose>
+          <geometry><cylinder><radius>0.13</radius><length>1.1</length></cylinder></geometry>
+        </collision>
+        <visual name="trunk_visual">
+          <pose>0 0 0.55 0 0 0</pose>
+          <geometry><cylinder><radius>0.13</radius><length>1.1</length></cylinder></geometry>
+          <material><ambient>0.28 0.16 0.08 1</ambient><diffuse>0.34 0.20 0.10 1</diffuse></material>
+        </visual>
+        <visual name="canopy_visual">
+          <pose>0 0 1.35 0 0 0</pose>
+          <geometry><sphere><radius>0.52</radius></sphere></geometry>
+          <material><ambient>0.05 0.26 0.10 1</ambient><diffuse>0.08 0.38 0.16 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="landing_tree_03">
+      <static>true</static>
+      <pose>3.8 5.0 0.0 0 0 0</pose>
+      <link name="link">
+        <collision name="trunk_collision">
+          <pose>0 0 0.50 0 0 0</pose>
+          <geometry><cylinder><radius>0.10</radius><length>1.0</length></cylinder></geometry>
+        </collision>
+        <visual name="trunk_visual">
+          <pose>0 0 0.50 0 0 0</pose>
+          <geometry><cylinder><radius>0.10</radius><length>1.0</length></cylinder></geometry>
+          <material><ambient>0.28 0.16 0.08 1</ambient><diffuse>0.34 0.20 0.10 1</diffuse></material>
+        </visual>
+        <visual name="canopy_visual">
+          <pose>0 0 1.22 0 0 0</pose>
+          <geometry><sphere><radius>0.48</radius></sphere></geometry>
+          <material><ambient>0.05 0.28 0.08 1</ambient><diffuse>0.08 0.42 0.12 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="landing_tree_04">
+      <static>true</static>
+      <pose>5.5 1.8 0.0 0 0 0</pose>
+      <link name="link">
+        <collision name="trunk_collision">
+          <pose>0 0 0.48 0 0 0</pose>
+          <geometry><cylinder><radius>0.12</radius><length>0.96</length></cylinder></geometry>
+        </collision>
+        <visual name="trunk_visual">
+          <pose>0 0 0.48 0 0 0</pose>
+          <geometry><cylinder><radius>0.12</radius><length>0.96</length></cylinder></geometry>
+          <material><ambient>0.28 0.16 0.08 1</ambient><diffuse>0.34 0.20 0.10 1</diffuse></material>
+        </visual>
+        <visual name="canopy_visual">
+          <pose>0 0 1.18 0 0 0</pose>
+          <geometry><sphere><radius>0.46</radius></sphere></geometry>
+          <material><ambient>0.05 0.26 0.10 1</ambient><diffuse>0.08 0.38 0.16 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="landing_cylinder_01">
+      <static>true</static>
+      <pose>-5.0 2.6 0.0 0 0 0</pose>
+      <link name="link">
+        <collision name="collision"><pose>0 0 0.45 0 0 0</pose><geometry><cylinder><radius>0.18</radius><length>0.9</length></cylinder></geometry></collision>
+        <visual name="visual"><pose>0 0 0.45 0 0 0</pose><geometry><cylinder><radius>0.18</radius><length>0.9</length></cylinder></geometry><material><ambient>0.45 0.45 0.42 1</ambient><diffuse>0.62 0.62 0.58 1</diffuse></material></visual>
+      </link>
+    </model>
+
+    <model name="landing_cylinder_02">
+      <static>true</static>
+      <pose>-3.9 -1.9 0.0 0 0 0</pose>
+      <link name="link">
+        <collision name="collision"><pose>0 0 0.35 0 0 0</pose><geometry><cylinder><radius>0.14</radius><length>0.7</length></cylinder></geometry></collision>
+        <visual name="visual"><pose>0 0 0.35 0 0 0</pose><geometry><cylinder><radius>0.14</radius><length>0.7</length></cylinder></geometry><material><ambient>0.45 0.45 0.42 1</ambient><diffuse>0.62 0.62 0.58 1</diffuse></material></visual>
+      </link>
+    </model>
+
+    <model name="landing_cylinder_03">
+      <static>true</static>
+      <pose>0.4 -5.6 0.0 0 0 0</pose>
+      <link name="link">
+        <collision name="collision"><pose>0 0 0.55 0 0 0</pose><geometry><cylinder><radius>0.16</radius><length>1.1</length></cylinder></geometry></collision>
+        <visual name="visual"><pose>0 0 0.55 0 0 0</pose><geometry><cylinder><radius>0.16</radius><length>1.1</length></cylinder></geometry><material><ambient>0.45 0.45 0.42 1</ambient><diffuse>0.62 0.62 0.58 1</diffuse></material></visual>
+      </link>
+    </model>
+
+    <model name="landing_cylinder_04">
+      <static>true</static>
+      <pose>2.8 2.2 0.0 0 0 0</pose>
+      <link name="link">
+        <collision name="collision"><pose>0 0 0.40 0 0 0</pose><geometry><cylinder><radius>0.12</radius><length>0.8</length></cylinder></geometry></collision>
+        <visual name="visual"><pose>0 0 0.40 0 0 0</pose><geometry><cylinder><radius>0.12</radius><length>0.8</length></cylinder></geometry><material><ambient>0.45 0.45 0.42 1</ambient><diffuse>0.62 0.62 0.58 1</diffuse></material></visual>
+      </link>
+    </model>
+
+    <model name="landing_cylinder_05">
+      <static>true</static>
+      <pose>4.9 -3.8 0.0 0 0 0</pose>
+      <link name="link">
+        <collision name="collision"><pose>0 0 0.50 0 0 0</pose><geometry><cylinder><radius>0.20</radius><length>1.0</length></cylinder></geometry></collision>
+        <visual name="visual"><pose>0 0 0.50 0 0 0</pose><geometry><cylinder><radius>0.20</radius><length>1.0</length></cylinder></geometry><material><ambient>0.45 0.45 0.42 1</ambient><diffuse>0.62 0.62 0.58 1</diffuse></material></visual>
+      </link>
+    </model>
+
   </world>
 </sdf>

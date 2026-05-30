@@ -84,6 +84,14 @@ class SimpleStateMachine:
         self.safeland_max_dist = float(rospy.get_param("~safeland_max_dist",  0.0))
         self.safeland_timeout  = float(rospy.get_param("~safeland_timeout",  30.0))
         self.safeland_land_z   = float(rospy.get_param("~safeland_land_z",   LAND_Z))
+        self.backup_landing_zones = self._parse_backup_zones(
+            rospy.get_param("~backup_landing_zones", [
+                [1.5, -0.5, 0.0, 1.0],
+                [-2.5, 3.5, 0.0, 1.0],
+                [4.5, -4.5, 0.0, 1.0],
+            ])
+        )
+        self.backup_approach_height = float(rospy.get_param("~backup_approach_height", 2.5))
         # landing_score 图层名称：如果 safeland 发布了该图层，可用距离+得分加权选点
         # 当 safeland 未发布 landing_score 图层时，回退为纯最近距离选点
         self.safeland_score_layer = rospy.get_param("~safeland_score_layer", "landing_score")
@@ -132,6 +140,7 @@ class SimpleStateMachine:
         self._land_disarm_start = None
         self._present_land_hold = False
         self._land_requested    = False
+        self._land_target_source = "none"
         self._last_land_request = rospy.Time(0)
         self._land_enter_time   = None   # 进入 ST_LAND 的时刻（用于超时保护）
         # ST_LAND 最终超时：若 land_timeout_secs 秒内仍未贴地也未上锁，强制 disarm
@@ -155,8 +164,9 @@ class SimpleStateMachine:
         self.land_client     = rospy.ServiceProxy("/mavros/cmd/land",   CommandTOL)
         self.set_mode_client = rospy.ServiceProxy("/mavros/set_mode",   SetMode)
 
-        rospy.loginfo("[SM] 初始化完成。起飞=%s 航点=%d safeland=%s",
-                      TAKEOFF_POINT, len(WAYPOINTS), self.safeland_topic)
+        rospy.loginfo("[SM] 初始化完成。起飞=%s 航点=%d safeland=%s 备降区=%d",
+                      TAKEOFF_POINT, len(WAYPOINTS), self.safeland_topic,
+                      len(self.backup_landing_zones))
         rospy.loginfo("[SM] 地图成熟度: min_cells=%d stable_window=%.1fs delta_ratio=%.2f confirm=%.1fs",
                       self.map_mature_min_cells, self.map_stable_window,
                       self.map_stable_delta_ratio, self.safeland_confirm_secs)
@@ -303,6 +313,7 @@ class SimpleStateMachine:
 
         self._land_target        = [best_xy[0], best_xy[1],
                                     self.safeland_land_z + 2.5, yaw_deg]
+        self._land_target_source = "safeland"
         self._safeland_recv_time = rospy.Time.now()
 
         rospy.loginfo_throttle(2.0,
@@ -370,6 +381,50 @@ class SimpleStateMachine:
     # -----------------------------------------------------------------------
     # 工具方法
     # -----------------------------------------------------------------------
+    def _parse_backup_zones(self, zones):
+        parsed = []
+        if zones is None:
+            return parsed
+        for zone in zones:
+            if not isinstance(zone, (list, tuple)) or len(zone) < 3:
+                rospy.logwarn("[SM] 忽略非法备降区配置: %s", zone)
+                continue
+            radius = float(zone[3]) if len(zone) >= 4 else 1.0
+            parsed.append([float(zone[0]), float(zone[1]), float(zone[2]), radius])
+        return parsed
+
+    def _current_yaw_deg(self):
+        ori = self.odom.pose.pose.orientation
+        return math.degrees(
+            math.atan2(2.0 * (ori.w * ori.z + ori.x * ori.y),
+                       1.0 - 2.0 * (ori.y * ori.y + ori.z * ori.z))
+        )
+
+    def _select_backup_landing_target(self):
+        if not self.backup_landing_zones:
+            return None
+        p = self.odom.pose.pose.position
+        yaw_deg = self._current_yaw_deg()
+        ranked = sorted(
+            self.backup_landing_zones,
+            key=lambda z: math.hypot(z[0] - p.x, z[1] - p.y)
+        )
+        chosen = ranked[0]
+        dist = math.hypot(chosen[0] - p.x, chosen[1] - p.y)
+        rospy.logwarn(
+            "[SM] 使用备降区: (%.2f, %.2f), radius=%.2fm, dist=%.2fm",
+            chosen[0], chosen[1], chosen[3], dist)
+        return [chosen[0], chosen[1], chosen[2] + self.backup_approach_height, yaw_deg]
+
+    def _start_final_approach(self, target, source):
+        self._land_target        = target
+        self._land_target_source = source
+        self.state              = ST_FLY_TO_LAND
+        self._present_land_hold = False
+        self._land_disarm_start = None
+        self._land_requested    = False
+        self._land_enter_time   = None
+
     def is_close(self, odom, pose, xy, z):
         if pose is None:
             return False
@@ -528,10 +583,7 @@ class SimpleStateMachine:
                     rospy.loginfo(
                         "[SM] ✅ 最优降落点 (%.2f,%.2f) 已确认（目标稳定 %.1fs），飞往目标",
                         self._land_target[0], self._land_target[1], recv_age)
-                    self.state              = ST_FLY_TO_LAND
-                    self._present_land_hold = False
-                    self._land_disarm_start = None
-                    self._land_requested    = False
+                    self._start_final_approach(self._land_target, "safeland")
                     return
                 else:
                     rospy.loginfo_throttle(1.0,
@@ -541,18 +593,19 @@ class SimpleStateMachine:
 
             # ---- 超时回退 ----
             if elapsed > self.safeland_timeout:
-                rospy.logwarn(
-                    "[SM] ⚠️ 等待 safeland 超时 (%.0fs)，回退到最后航点原地降落",
-                    self.safeland_timeout)
-                last = WAYPOINTS[-1]
-                # 修正：使用 safeland_land_z 作为着地高度，而非航点巡航高度 last[2]
-                # 否则无人机会在 2.5m 巡航高度就尝试「降落」
-                self._land_target       = [last[0], last[1],
-                                           self.safeland_land_z + 2.5, last[3]]
-                self.state              = ST_FLY_TO_LAND
-                self._present_land_hold = False
-                self._land_disarm_start = None
-                self._land_requested    = False
+                backup = self._select_backup_landing_target()
+                if backup is not None:
+                    rospy.logwarn(
+                        "[SM] ⚠️ 等待 safeland 超时 (%.0fs)，切换到最近备降区",
+                        self.safeland_timeout)
+                    self._start_final_approach(backup, "backup")
+                else:
+                    rospy.logwarn(
+                        "[SM] ⚠️ 等待 safeland 超时且无备降区配置，回退到最后航点原地降落")
+                    last = WAYPOINTS[-1]
+                    self._start_final_approach(
+                        [last[0], last[1], self.safeland_land_z + 2.5, last[3]],
+                        "last_waypoint")
             else:
                 rospy.loginfo_throttle(3.0,
                     "[SM] 等待 safeland 结果... %.0f/%.0fs",
@@ -566,6 +619,7 @@ class SimpleStateMachine:
                              self.land_xy_tol, self.land_z_tol):  # 修正: 使用 land_z_tol
                 rospy.loginfo("[SM] 已到达降落目标正上方 (%.2f,%.2f)，开始下降",
                               self._land_target[0], self._land_target[1])
+                rospy.loginfo("[SM] 降落目标来源: %s", self._land_target_source)
                 self.state = ST_LAND
             return
 

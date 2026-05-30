@@ -255,6 +255,7 @@ class GlobalGridMapNode {
   //     - threshold=20（默认）表示每格最多 20 帧更新，兼顾速度与稳定性。
   //   此外，体素降采样（voxel_grid）保证每帧输入点不超密，减少累积误差。
   void cloudCallback(const sensor_msgs::PointCloud2ConstPtr& cloud_msg) {
+    const ros::WallTime t0 = ros::WallTime::now();
     const std::string resolved_frame = resolveMapFrame(*cloud_msg);
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr input_cloud(new pcl::PointCloud<pcl::PointXYZ>());
@@ -281,6 +282,13 @@ class GlobalGridMapNode {
       updateMapFromCloud(*filtered_cloud);
       map_.setTimestamp(last_stamp_.toNSec());
     }
+
+    const double dt_ms = (ros::WallTime::now() - t0).toSec() * 1000.0;
+    ROS_INFO_THROTTLE(
+        2.0,
+        "[GridMap] frame input=%zu height=%zu downsampled=%zu resolution=%.3f voxel=(%.3f,%.3f,%.3f) dt=%.2fms",
+        input_cloud->size(), height_filtered_cloud->size(), filtered_cloud->size(),
+        resolution_, voxel_leaf_size_x_, voxel_leaf_size_y_, voxel_leaf_size_z_, dt_ms);
 
     if (publish_rate_ <= 0.0) {
       publishGridMap();
