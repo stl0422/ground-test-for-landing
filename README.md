@@ -114,6 +114,67 @@ start_online.sh
 | Offline benchmark | Static PCD / MARSIM replay | Safety metrics and landing map evaluation | Tune `safeland` thresholds and compare parameter sets | `./tools/marsim/run_marsim_safeland_offline.sh` |
 | Batch evaluation | Map list + parameter sweep | CSV benchmark results | Compare thresholds across many scans | `./tools/marsim/batch_eval_marsim_safeland.sh` |
 
+## Optimization Roadmap
+
+### 1. Environment complexity
+
+The current Gazebo terrain should be extended with randomized tree and cylinder obstacles in the world file.
+
+Placement rules:
+
+- Obstacles should be added directly in `PX4_Firmware/Tools/sitl_gazebo/worlds/nagetive_terrain.world`.
+- Trees and cylinders should not be placed on pits, bumps, or steep local terrain.
+- Obstacle density should stay moderate: not clustered enough to block the whole map, and not sparse enough to make avoidance trivial.
+- Keep multiple open landing footprints of at least `0.5 m x 0.5 m`.
+- Keep enough free space around candidate landing areas so `landing_safety_margin` remains meaningful.
+
+Recommended generation policy:
+
+- Predefine allowed placement zones on locally flat terrain.
+- Randomly sample obstacle positions only inside those zones.
+- Enforce a minimum distance between obstacles.
+- Enforce a minimum distance between obstacles and known safe landing patches.
+
+### 2. Stability and efficiency metrics
+
+The landing detector should be evaluated with both stability and runtime metrics.
+
+Key metrics:
+
+- Grid resolution versus landing accuracy.
+- Point cloud downsampling voxel size versus terrain detail preservation.
+- `safeland` runtime per frame.
+- Number of valid landing cells over time.
+- Landing target jitter between consecutive frames.
+- False rejection rate on valid landing areas.
+- False acceptance rate on unsafe terrain.
+
+Tuning direction:
+
+- Smaller grid cells improve terrain detail but increase map size and filtering cost.
+- Larger grid cells reduce computation but can hide small bumps, pits, and steps.
+- Stronger point cloud downsampling improves runtime but may remove terrain features needed by `slope`, `roughness`, `step`, and `depression_score`.
+- The practical target is to keep the detector stable across frames while maintaining enough terrain detail for a `0.5 m x 0.5 m` landing footprint.
+
+### 3. Emergency safety behavior
+
+The state machine should support a fallback landing strategy when no valid landing region is found.
+
+Expected behavior:
+
+- Continue searching during the configured `safeland_timeout` window.
+- If no `landing_center` candidate is available, switch to a backup landing policy.
+- Prefer known backup zones that were prevalidated in the map or world file.
+- If multiple backup zones exist, select the nearest reachable one with planner support.
+- If no backup zone is reachable, hover or return to a safe loiter point instead of descending onto unknown terrain.
+
+Recommended implementation path:
+
+- Add a backup landing zone list to the state machine config.
+- Add a backup-zone selector that considers distance, reachability, and minimum terrain safety.
+- Log the reason for fallback activation for later benchmark analysis.
+- Record whether the final landing target came from `safeland` or from the backup policy.
+
 ## Offline Benchmark
 
 See:
