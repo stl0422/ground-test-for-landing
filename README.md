@@ -116,6 +116,8 @@ start_online.sh
 
 ## Optimization Roadmap
 
+Detailed plan: `docs/optimization_plan.md`
+
 ### 1. Environment complexity
 
 The current Gazebo terrain should be extended with randomized tree and cylinder obstacles in the world file.
