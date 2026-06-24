@@ -119,3 +119,86 @@ landing_score_w_slope: 0.35   # 坡度权重（越平坦得分越高）
 landing_score_w_step:  0.30   # 阶梯权重（越无台阶得分越高）
 landing_score_w_dep:   0.25   # 凹陷权重（越无坑洼得分越高）
 landing_score_w_rough: 0.10   # 粗糙度权重（越光滑得分越高）
+
+# ============================================================
+# ---- 最优落点选择策略 ----
+#
+# 综合打分公式：
+#   composite = best_point_score_weight * norm_score
+#             + (1 - best_point_score_weight) * norm_dist_inv
+#
+#   norm_score   = score / max_score      （归一化安全得分，越高越好）
+#   norm_dist_inv = 1 - dist / max_dist   （归一化距离倒数，越近越好）
+#
+# 参数指导：
+#   1.0 = 纯得分优先（全图选最安全点，可能离目标很远）
+#   0.7 = 推荐默认（安全性为主，靠近地图中心优先）
+#   0.5 = 安全性与距离并重（折中选择）
+#   0.0 = 纯距离优先（危险，不推荐）
+# ============================================================
+best_point_score_weight: 0.7
+
+# ============================================================
+# ---- 落点稳定性：滑动中值滤波 ----
+#
+# 问题：每帧独立选点时，相邻帧的"最优落点"可能因点云轻微变化而
+#       在几十厘米范围内跳动，导致无人机频繁调整目标、悬停抖动。
+#
+# 方案：对连续 N 帧的最优落点 XYZ 各维度取中值，输出稳定参考点。
+#   中值滤波对离群帧抵抗力强：仅一帧跳动不影响输出，
+#   需超过半数帧持续偏移才改变发布值。
+#
+# best_point_median_window：滑动窗口帧数
+#   1 = 关闭（等价于原始行为，每帧直接发布，无缓冲）
+#   3 = 轻度滤波（适合低频点云场景）
+#   5 = 推荐（在线 5Hz 场景下，约 1 秒历史）
+#   7 = 强滤波（高频跳动场景，响应稍慢）
+#
+# best_point_jump_guard_m：跳变门限（m）
+#   新中值与上次发布值距离超过此值时，直接接受（防止缓慢漂移无法更新落点）
+#   建议值：1.0~2.0 m
+# ============================================================
+best_point_median_window: 5
+best_point_jump_guard_m: 1.5
+
+# ============================================================
+# ---- 应急备降区（Alternate Landing Zone）参数 ----
+#
+# 当主降落区（所有严格约束均通过）为空时，
+# 系统自动用放宽阈值重新搜索备降区，输出：
+#   - /safeland/alt_landing_center 图层（RViz 可视化）
+#   - /safeland/alt_landing_status 话题（"PRIMARY_OK" / "ALT_FOUND" / "ALL_FAILED"）
+#   - /safeland/best_landing_point 话题（最优落点世界坐标）
+#
+# enable_alt_landing: true = 启用备降区搜索，false = 关闭（与第一版行为一致）
+enable_alt_landing: true
+
+# alt_landing_relax_factor：阈值放宽系数
+#   各约束阈值（坡度/阶梯/凹陷/高差）均乘以此系数后重新评估
+#   1.0 = 不放宽，1.5 = 放宽 50%，2.0 = 放宽一倍
+#   建议范围：1.2 ~ 2.0。值越大找到备降区的概率越高，但安全裕量越小。
+alt_landing_relax_factor: 1.5
+
+# alt_landing_max_relax：放宽系数上限，防止过度放宽导致选出不安全落点
+#   无论 alt_landing_relax_factor 设置多大，实际放宽不超过此值
+alt_landing_max_relax: 2.0
+
+# publish_alt_landing_viz：是否在 grid_map 中发布 alt_landing_center 图层
+#   true = 发布（可在 RViz 中观察备降区位置），false = 不发布（节省带宽）
+publish_alt_landing_viz: true
+
+# ============================================================
+# ---- 试验数据记录（多次试验对比分析）----
+#
+# 每帧的关键指标（有效格子数、安全格子数、主/备降落区数量、
+# 最优得分、计算耗时、各阈值参数等）自动追加写入 CSV 文件。
+# 可用 tools/marsim/summarize_round4.py 进行汇总分析。
+#
+# metrics_csv_path：CSV 文件路径；为空时不记录，不影响正常运行
+# 示例：/tmp/safeland_metrics.csv  或  /home/user/exp/run1.csv
+metrics_csv_path: ""
+
+# metrics_record_every_n_frames：每隔多少帧写入一次
+#   1 = 每帧都记录（适合离线 PCD 分析，帧数少）
+#   5 = 每5帧记录（适合在线模式，减少 I/O 开销）
+metrics_record_every_n_frames: 1

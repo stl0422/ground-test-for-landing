@@ -35,3 +35,13 @@ landing_score_w_slope: 0.35
 landing_score_w_step: 0.30
 landing_score_w_dep: 0.25
 landing_score_w_rough: 0.10
+
+# ---- 备降区（离线扫描 profile）----
+enable_alt_landing: true
+alt_landing_relax_factor: 1.5
+alt_landing_max_relax: 2.0
+publish_alt_landing_viz: true
+
+# ---- 数据记录（离线 profile 默认写入 /tmp）----
+metrics_csv_path: ""
+metrics_record_every_n_frames: 1

@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="zh"><head><meta charset="utf-8"/>
+<title>safeland 真实仿真测试报告</title>
+<style>
+  body{font-family:"Segoe UI","PingFang SC",sans-serif;background:#F8FAFC;color:#1F2937;margin:0;padding:24px}
+  h1{font-size:26px;color:#1E3A8A;border-bottom:3px solid #2563EB;padding-bottom:8px}
+  h2{font-size:18px;color:#1E3A8A;margin-top:28px}
+  table{border-collapse:collapse;width:100%;margin:12px 0}
+  th{background:#2563EB;color:white;padding:7px 9px;font-size:11px}
+  td{padding:5px 9px;border-bottom:1px solid #E5E7EB;font-size:11px}
+  tr:nth-child(even) td{background:#EFF6FF}
+  .box{background:#EFF6FF;border-left:4px solid #2563EB;padding:12px 16px;border-radius:4px;margin:12px 0;line-height:1.8}
+  .fig-block{margin:20px 0;background:white;padding:14px;border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,0.08)}
+  .fig-block img{max-width:100%;height:auto;display:block;margin:0 auto}
+</style></head><body>
+<h1>🚁 safeland 真实仿真测试分析报告</h1>
+<p>生成时间：2026-06-15 | 总运行次数：30 | 有效落区次数：4 | 全失败次数：26</p>
+<div class="box">
+  <b>测试说明：</b>数据来自真实 ROS 节点（perfect_drone_sim + fast_lio_global_grid_map + safeland_node）<br>
+  <b>地图：</b>kdxt_world（真实室外激光扫描）+ random_map_24/random_map_2（随机障碍物地图）<br>
+  <b>最优落点：地图=kdxt(室外) 配置=baseline 得分=0.902 位置=(10.6,-5.7)</b><br>
+  ⚠️ random_map 系列地图为密集随机障碍物场景，无平坦降落区域，全部返回 landing_count=0（符合预期）<br>
+  ✅ kdxt_world 真实室外地图中，baseline/no_alt/alt_relax2x/recommended/aggressive 等配置均找到了安全落区，得分约 0.90
+</div>
+<h2>各次运行详细结果</h2>
+<table>
+  <thead><tr>
+    <th>地图</th><th>配置</th><th>分辨率</th><th>体素</th><th>雷达</th>
+    <th>放宽/备降</th><th>落区数</th><th>备降数</th><th>有效栅格</th>
+    <th>安全得分</th><th>落点坐标</th><th>时延</th>
+  </tr></thead>
+  <tbody>
+        <tr>
+          <td>kdxt(室外)</td>
+          <td>baseline</td>
+          <td>0.10m</td>
+          <td>0.05m</td>
+          <td>0.2</td>
+          <td>1.5 / true</td>
+          <td style="color:#10B981;font-weight:bold">1</td>
+          <td>0</td>
+          <td>112,266</td>
+          <td style="font-weight:bold">0.902</td>
+          <td>(10.6,-5.7)</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>kdxt(室外)</td>
+          <td>hires</td>
+          <td>0.08m</td>
+          <td>0.03m</td>
+          <td>0.2</td>
+          <td>1.5 / true</td>
+          <td style="color:#EF4444;font-weight:bold">0</td>
+          <td>0</td>
+          <td>145,064</td>
+          <td style="font-weight:bold">—</td>
+          <td>—</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>kdxt(室外)</td>
+          <td>lores</td>
+          <td>0.12m</td>
+          <td>0.08m</td>
+          <td>0.2</td>
+          <td>1.5 / true</td>
+          <td style="color:#EF4444;font-weight:bold">0</td>
+          <td>0</td>
+          <td>90,758</td>
+          <td style="font-weight:bold">—</td>
+          <td>—</td>
+          <td>2.52s</td>
+        </tr>
+        <tr>
+          <td>kdxt(室外)</td>
+          <td>unknown</td>
+          <td>0.10m</td>
+          <td>0.05m</td>
+          <td>0.4</td>
+          <td>1.5 / true</td>
+          <td style="color:#10B981;font-weight:bold">1</td>
+          <td>0</td>
+          <td>112,266</td>
+          <td style="font-weight:bold">0.902</td>
+          <td>(10.6,-5.7)</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>kdxt(室外)</td>
+          <td>unknown</td>
+          <td>0.10m</td>
+          <td>0.05m</td>
+          <td>0.2</td>
+          <td>1.5 / false</td>
+          <td style="color:#10B981;font-weight:bold">1</td>
+          <td>0</td>
+          <td>112,266</td>
+          <td style="font-weight:bold">0.902</td>
+          <td>(10.6,-5.7)</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>kdxt(室外)</td>
+          <td>unknown</td>
+          <td>0.10m</td>
+          <td>0.05m</td>
+          <td>0.2</td>
+          <td>2.0 / true</td>
+          <td style="color:#10B981;font-weight:bold">1</td>
+          <td>0</td>
+          <td>112,266</td>
+          <td style="font-weight:bold">0.902</td>
+          <td>(10.6,-5.7)</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>kdxt(室外)</td>
+          <td>unknown</td>
+          <td>0.08m</td>
+          <td>0.03m</td>
+          <td>0.4</td>
+          <td>1.5 / true</td>
+          <td style="color:#EF4444;font-weight:bold">0</td>
+          <td>0</td>
+          <td>145,064</td>
+          <td style="font-weight:bold">—</td>
+          <td>—</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>kdxt(室外)</td>
+          <td>unknown</td>
+          <td>0.12m</td>
+          <td>0.08m</td>
+          <td>0.2</td>
+          <td>1.5 / false</td>
+          <td style="color:#EF4444;font-weight:bold">0</td>
+          <td>0</td>
+          <td>90,758</td>
+          <td style="font-weight:bold">—</td>
+          <td>—</td>
+          <td>2.72s</td>
+        </tr>
+        <tr>
+          <td>kdxt(室外)</td>
+          <td>recommended</td>
+          <td>0.09m</td>
+          <td>0.04m</td>
+          <td>0.2</td>
+          <td>1.8 / true</td>
+          <td style="color:#EF4444;font-weight:bold">0</td>
+          <td>0</td>
+          <td>127,156</td>
+          <td style="font-weight:bold">—</td>
+          <td>—</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>kdxt(室外)</td>
+          <td>aggressive</td>
+          <td>0.08m</td>
+          <td>0.03m</td>
+          <td>0.4</td>
+          <td>2.0 / true</td>
+          <td style="color:#EF4444;font-weight:bold">0</td>
+          <td>0</td>
+          <td>145,064</td>
+          <td style="font-weight:bold">—</td>
+          <td>—</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>rand_24(障碍)</td>
+          <td>baseline</td>
+          <td>0.10m</td>
+          <td>0.05m</td>
+          <td>0.2</td>
+          <td>1.5 / true</td>
+          <td style="color:#EF4444;font-weight:bold">0</td>
+          <td>0</td>
+          <td>113,422</td>
+          <td style="font-weight:bold">—</td>
+          <td>—</td>
+          <td>1.44s</td>
+        </tr>
+        <tr>
+          <td>rand_24(障碍)</td>
+          <td>hires</td>
+          <td>0.08m</td>
+          <td>0.03m</td>
+          <td>0.2</td>
+          <td>1.5 / true</td>
+          <td style="color:#EF4444;font-weight:bold">0</td>
+          <td>0</td>
+          <td>166,760</td>
+          <td style="font-weight:bold">—</td>
+          <td>—</td>
+          <td>2.03s</td>
+        </tr>
+        <tr>
+          <td>rand_24(障碍)</td>
+          <td>lores</td>
+          <td>0.12m</td>
+          <td>0.08m</td>
+          <td>0.2</td>
+          <td>1.5 / true</td>
+          <td style="color:#EF4444;font-weight:bold">0</td>
+          <td>0</td>
+          <td>115,540</td>
+          <td style="font-weight:bold">—</td>
+          <td>—</td>
+          <td>1.03s</td>
+        </tr>
+        <tr>
+          <td>rand_24(障碍)</td>
+          <td>unknown</td>
+          <td>0.10m</td>
+          <td>0.05m</td>
+          <td>0.4</td>
+          <td>1.5 / true</td>
+          <td style="color:#EF4444;font-weight:bold">0</td>
+          <td>0</td>
+          <td>113,422</td>
+          <td style="font-weight:bold">—</td>
+          <td>—</td>
+          <td>1.43s</td>
+        </tr>
+        <tr>
+          <td>rand_24(障碍)</td>
+          <td>unknown</td>
+          <td>0.10m</td>
+          <td>0.05m</td>
+          <td>0.2</td>
+          <td>1.5 / false</td>
+          <td style="color:#EF4444;font-weight:bold">0</td>
+          <td>0</td>
+          <td>113,422</td>
+          <td style="font-weight:bold">—</td>
+          <td>—</td>
+          <td>1.42s</td>
+        </tr>
+        <tr>
+          <td>rand_24(障碍)</td>
+          <td>unknown</td>
+          <td>0.10m</td>
+          <td>0.05m</td>
+          <td>0.2</td>
+          <td>2.0 / true</td>
+          <td style="color:#EF4444;font-weight:bold">0</td>
+          <td>0</td>
+          <td>113,422</td>
+          <td style="font-weight:bold">—</td>
+          <td>—</td>
+          <td>1.43s</td>
+        </tr>
+        <tr>
+          <td>rand_24(障碍)</td>
+          <td>unknown</td>
+          <td>0.08m</td>
+          <td>0.03m</td>
+          <td>0.4</td>
+          <td>1.5 / true</td>
+          <td style="color:#EF4444;font-weight:bold">0</td>
+          <td>0</td>
+          <td>166,760</td>
+          <td style="font-weight:bold">—</td>
+          <td>—</td>
+          <td>2.04s</td>
+        </tr>
+        <tr>
+          <td>rand_24(障碍)</td>
+          <td>unknown</td>
+          <td>0.12m</td>
+          <td>0.08m</td>
+          <td>0.2</td>
+          <td>1.5 / false</td>
+          <td style="color:#EF4444;font-weight:bold">0</td>
+          <td>0</td>
+          <td>115,540</td>
+          <td style="font-weight:bold">—</td>
+          <td>—</td>
+          <td>1.01s</td>
+        </tr>
+        <tr>
+          <td>rand_24(障碍)</td>
+          <td>recommended</td>
+          <td>0.09m</td>
+          <td>0.04m</td>
+          <td>0.2</td>
+          <td>1.8 / true</td>
+          <td style="color:#EF4444;font-weight:bold">0</td>
+          <td>0</td>
+          <td>166,416</td>
+          <td style="font-weight:bold">—</td>
+          <td>—</td>
+          <td>1.63s</td>
+        </tr>
+        <tr>
+          <td>rand_24(障碍)</td>
+          <td>aggressive</td>
+          <td>0.08m</td>
+          <td>0.03m</td>
+          <td>0.4</td>
+          <td>2.0 / true</td>
+          <td style="color:#EF4444;font-weight:bold">0</td>
+          <td>0</td>
+          <td>166,760</td>
+          <td style="font-weight:bold">—</td>
+          <td>—</td>
+          <td>2.01s</td>
+        </tr>
+        <tr>
+          <td>rand_2(障碍)</td>
+          <td>baseline</td>
+          <td>0.10m</td>
+          <td>0.05m</td>
+          <td>0.2</td>
+          <td>1.5 / true</td>
+          <td style="color:#EF4444;font-weight:bold">0</td>
+          <td>0</td>
+          <td>127,434</td>
+          <td style="font-weight:bold">—</td>
+          <td>—</td>
+          <td>1.62s</td>
+        </tr>
+        <tr>
+          <td>rand_2(障碍)</td>
+          <td>hires</td>
+          <td>0.08m</td>
+          <td>0.03m</td>
+          <td>0.2</td>
+          <td>1.5 / true</td>
+          <td style="color:#EF4444;font-weight:bold">0</td>
+          <td>0</td>
+          <td>174,183</td>
+          <td style="font-weight:bold">—</td>
+          <td>—</td>
+          <td>2.43s</td>
+        </tr>
+        <tr>
+          <td>rand_2(障碍)</td>
+          <td>lores</td>
+          <td>0.12m</td>
+          <td>0.08m</td>
+          <td>0.2</td>
+          <td>1.5 / true</td>
+          <td style="color:#EF4444;font-weight:bold">0</td>
+          <td>0</td>
+          <td>115,505</td>
+          <td style="font-weight:bold">—</td>
+          <td>—</td>
+          <td>1.22s</td>
+        </tr>
+        <tr>
+          <td>rand_2(障碍)</td>
+          <td>unknown</td>
+          <td>0.10m</td>
+          <td>0.05m</td>
+          <td>0.4</td>
+          <td>1.5 / true</td>
+          <td style="color:#EF4444;font-weight:bold">0</td>
+          <td>0</td>
+          <td>127,434</td>
+          <td style="font-weight:bold">—</td>
+          <td>—</td>
+          <td>1.62s</td>
+        </tr>
+        <tr>
+          <td>rand_2(障碍)</td>
+          <td>unknown</td>
+          <td>0.10m</td>
+          <td>0.05m</td>
+          <td>0.2</td>
+          <td>1.5 / false</td>
+          <td style="color:#EF4444;font-weight:bold">0</td>
+          <td>0</td>
+          <td>127,434</td>
+          <td style="font-weight:bold">—</td>
+          <td>—</td>
+          <td>1.62s</td>
+        </tr>
+        <tr>
+          <td>rand_2(障碍)</td>
+          <td>unknown</td>
+          <td>0.10m</td>
+          <td>0.05m</td>
+          <td>0.2</td>
+          <td>2.0 / true</td>
+          <td style="color:#EF4444;font-weight:bold">0</td>
+          <td>0</td>
+          <td>127,434</td>
+          <td style="font-weight:bold">—</td>
+          <td>—</td>
+          <td>1.61s</td>
+        </tr>
+        <tr>
+          <td>rand_2(障碍)</td>
+          <td>unknown</td>
+          <td>0.08m</td>
+          <td>0.03m</td>
+          <td>0.4</td>
+          <td>1.5 / true</td>
+          <td style="color:#EF4444;font-weight:bold">0</td>
+          <td>0</td>
+          <td>174,183</td>
+          <td style="font-weight:bold">—</td>
+          <td>—</td>
+          <td>2.42s</td>
+        </tr>
+        <tr>
+          <td>rand_2(障碍)</td>
+          <td>unknown</td>
+          <td>0.12m</td>
+          <td>0.08m</td>
+          <td>0.2</td>
+          <td>1.5 / false</td>
+          <td style="color:#EF4444;font-weight:bold">0</td>
+          <td>0</td>
+          <td>115,505</td>
+          <td style="font-weight:bold">—</td>
+          <td>—</td>
+          <td>1.23s</td>
+        </tr>
+        <tr>
+          <td>rand_2(障碍)</td>
+          <td>recommended</td>
+          <td>0.09m</td>
+          <td>0.04m</td>
+          <td>0.2</td>
+          <td>1.8 / true</td>
+          <td style="color:#EF4444;font-weight:bold">0</td>
+          <td>0</td>
+          <td>169,703</td>
+          <td style="font-weight:bold">—</td>
+          <td>—</td>
+          <td>2.05s</td>
+        </tr>
+        <tr>
+          <td>rand_2(障碍)</td>
+          <td>aggressive</td>
+          <td>0.08m</td>
+          <td>0.03m</td>
+          <td>0.4</td>
+          <td>2.0 / true</td>
+          <td style="color:#EF4444;font-weight:bold">0</td>
+          <td>0</td>
+          <td>174,183</td>
+          <td style="font-weight:bold">—</td>
+          <td>—</td>
+          <td>2.42s</td>
+        </tr></tbody>
+</table>
+<h2>详细分析图表</h2>
+
+      <div class="fig-block"><h3>图01：落区格子数 + 有效栅格总览</h3>
+        <img src="r01_landing_overview.png" alt="图01：落区格子数 + 有效栅格总览" /></div>
+      <div class="fig-block"><h3>图02：安全得分 + 分辨率影响</h3>
+        <img src="r02_score_vs_resolution.png" alt="图02：安全得分 + 分辨率影响" /></div>
+      <div class="fig-block"><h3>图03：计算时延热力图 + 传感器稀疏度</h3>
+        <img src="r03_dt_heatmap.png" alt="图03：计算时延热力图 + 传感器稀疏度" /></div>
+      <div class="fig-block"><h3>图04：备降区开关对比</h3>
+        <img src="r04_alt_landing.png" alt="图04：备降区开关对比" /></div>
+      <div class="fig-block"><h3>图05：三张地图横向对比</h3>
+        <img src="r05_map_comparison.png" alt="图05：三张地图横向对比" /></div>
+      <div class="fig-block"><h3>图06：各地图详细对比柱状图</h3>
+        <img src="r06_detail_by_map.png" alt="图06：各地图详细对比柱状图" /></div>
+      <div class="fig-block"><h3>图07：综合仪表盘</h3>
+        <img src="r07_dashboard.png" alt="图07：综合仪表盘" /></div>
+</body></html>

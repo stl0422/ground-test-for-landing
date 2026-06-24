@@ -154,6 +154,78 @@ class GlobalGridMapNode {
     if (resolution_ <= 0.0) {
       throw std::runtime_error("Parameter `resolution` must be positive.");
     }
+
+    // ====================================================================
+    // 自适应降采样策略（启动时自动检测并修正体素参数）
+    //
+    // 四级规则（按优先级从高到低）：
+    //
+    //   规则0：voxel_leaf = 0 → 关闭降采样，原始点云全量灌入
+    //          适合低密度/室内场景；高密度场景（MID-360 10Hz）会导致高 CPU
+    //          打印 WARN，让用户决定
+    //
+    //   规则1：voxel_leaf > resolution → 自动截断为 resolution（强制修正）
+    //          原因：体素大于网格格子时，多个格子的点云被聚合到一个体素中，
+    //          实际等效为"粗粒度体素赋值"，导致相邻格子共享同一个点的高度，
+    //          坑洼/台阶的高程变化被抹平，step/roughness/depression 均受影响。
+    //          修正策略：将体素截断为 resolution（最宽松的安全上限）
+    //
+    //   规则2：voxel_leaf > resolution * 0.75 → 打印 WARN 提醒（不自动修正）
+    //          体素接近格子大小：地形细节可能略损失，建议用户评估
+    //
+    //   规则3：voxel_leaf < resolution * 0.25 → 打印 INFO 建议提升
+    //          极密集降采样：计算开销大但收益递减（每格已有数十个代表点）
+    //          建议提升到 resolution/2 ~ resolution
+    //
+    // 设计约束：
+    //   - 自动截断仅在规则1触发（明确会损失精度的情况）
+    //   - 其他情况仅打印建议，不改参数，保持用户意图
+    //   - 截断后重新打印当前生效值，便于日志追踪
+    // ====================================================================
+    if (voxel_leaf_size_x_ > 0.0 && voxel_leaf_size_y_ > 0.0 && voxel_leaf_size_z_ > 0.0) {
+      const double vl_xy = (voxel_leaf_size_x_ + voxel_leaf_size_y_) * 0.5;
+
+      if (vl_xy > resolution_) {
+        // 规则1：体素超过格子大小 → 自动截断（强制修正）
+        // 截断为 resolution（不是 resolution/2，保留一定余量）
+        const double clamped = resolution_;
+        ROS_WARN("[GridMap] voxel_leaf_size (%.3f) > resolution (%.3f): "
+                 "AUTO-CLAMPED to %.3f to prevent terrain detail loss. "
+                 "Please update your yaml to avoid this message.",
+                 vl_xy, resolution_, clamped);
+        voxel_leaf_size_x_ = clamped;
+        voxel_leaf_size_y_ = clamped;
+        // Z 方向单独处理：通常高度分辨率不需要比 XY 更细
+        if (voxel_leaf_size_z_ > resolution_) {
+          voxel_leaf_size_z_ = clamped;
+        }
+        ROS_INFO("[GridMap] Effective voxel_leaf_size after clamp: "
+                 "x=%.3f y=%.3f z=%.3f",
+                 voxel_leaf_size_x_, voxel_leaf_size_y_, voxel_leaf_size_z_);
+      } else if (vl_xy > resolution_ * 0.75) {
+        // 规则2：体素接近但不超过格子大小 → 仅提醒
+        ROS_WARN("[GridMap] voxel_leaf_size (%.3f) is close to resolution (%.3f). "
+                 "Terrain features (pits/steps) may be slightly smoothed. "
+                 "Recommend: voxel_leaf_size <= %.3f (resolution * 0.75).",
+                 vl_xy, resolution_, resolution_ * 0.75);
+      } else if (vl_xy < resolution_ * 0.25) {
+        // 规则3：体素远小于格子大小 → 建议提升
+        ROS_INFO("[GridMap] voxel_leaf_size (%.3f) is much smaller than resolution (%.3f). "
+                 "Consider voxel_leaf_size >= %.3f (resolution * 0.5) to reduce "
+                 "redundant computation without precision loss.",
+                 vl_xy, resolution_, resolution_ * 0.5);
+      } else {
+        // 正常范围 [resolution*0.25, resolution*0.75]
+        ROS_INFO("[GridMap] voxel_leaf_size (%.3f) is in recommended range "
+                 "[%.3f, %.3f] for resolution=%.3f.",
+                 vl_xy, resolution_ * 0.25, resolution_ * 0.75, resolution_);
+      }
+    } else {
+      // 规则0：关闭降采样
+      ROS_WARN("[GridMap] voxel downsampling is DISABLED (voxel_leaf_size <= 0). "
+               "This may cause high CPU usage in dense point cloud scenarios "
+               "(e.g. Livox MID-360 at 10 Hz can produce 20k+ points per frame).");
+    }
   }
 
   // --------------------------------------------------------------------------

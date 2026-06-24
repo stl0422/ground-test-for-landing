@@ -54,3 +54,13 @@ grid_map_visualizations:
       layer: landing_score
       data_min: 0.0
       data_max: 1.0
+
+  # alt_landing_center：备降区候选点（1=备降区最优候选，0=非备降区）
+  # 仅在主降落区为空（landing_count=0）且 enable_alt_landing=true 时写入
+  # 颜色建议设为黄色/橙色，区别于主降落区（通常为绿色）
+  - name: alt_landing_center_viz
+    type: occupancy_grid
+    params:
+      layer: alt_landing_center
+      data_min: 0.0
+      data_max: 1.0

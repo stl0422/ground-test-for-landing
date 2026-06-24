@@ -1,0 +1,62 @@
+# ===========================================================================
+# global_grid_map_complex_terrain.yaml
+#
+# 复杂地形场景专用的栅格地图配置
+#
+# 适用于：起伏地形、稀疏点云、遮挡严重的室外测试场景
+#
+# 与标准 global_grid_map.yaml 的主要差异：
+#   1. resolution = 0.10m（保持精度，复杂地形不宜降低分辨率）
+#   2. voxel_leaf = 0.07m（介于精细和粗略之间，复杂地形点云密度不均）
+#   3. max_valid_z = 2.0m（与 safeland_complex_terrain.yaml 一致）
+#   4. min_valid_z = -2.5m（允许更深的地形低点）
+#   5. cell_count_threshold = 0（不冻结，让坑底/稀疏区持续累积更新）
+#   6. initial_padding 增大（复杂地形地图范围通常更大）
+# ===========================================================================
+
+input_cloud_topic: /cloud_registered
+map_frame: camera_init
+
+grid_map_topic: /global_grid_map
+debug_cloud_topic: /global_grid_map/points
+
+elevation_layer: elevation
+sum_layer: sum_z
+count_layer: count
+
+publish_rate: 5.0
+cell_count_threshold: 0       # 不限制（坑洼/稀疏区需持续累积）
+subscriber_queue_size: 1
+publish_debug_cloud: false
+
+# 复杂地形高度范围扩大
+min_valid_z: -2.5             # m（比标准 -1.8m 更低，允许深沟/坑底）
+max_valid_z: 2.0              # m（比标准 1.0m 更高，允许矮灌木/土坡坎）
+
+resolution: 0.10              # m/格（保持高精度，复杂地形需要细粒度）
+# 降采样策略说明：
+#   voxel=0.07m（约 resolution×0.7），平衡精度与复杂地形点云密度不均问题
+#   复杂地形中部分区域点云极密（平地），部分极稀（遮挡区），
+#   0.07m 的体素在密集区降采样效果好，在稀疏区影响最小
+voxel_leaf_size_x: 0.07
+voxel_leaf_size_y: 0.07
+voxel_leaf_size_z: 0.07
+
+# 初始化/扩展边界更大（复杂地形地图范围通常 > 标准场景）
+initial_padding_x: 15.0
+initial_padding_y: 15.0
+expand_margin_x: 10.0
+expand_margin_y: 10.0
+
+# ===========================================================================
+# PCD 工作模式
+# ===========================================================================
+pcd_mode: online
+
+pcd_path: ""
+pcd_frame_id: camera_init
+pcd_body_frame: false
+pcd_extrinsic_T: [0.0, 0.0, 0.0]
+pcd_extrinsic_R: [1.0, 0.0, 0.0,
+                  0.0, 1.0, 0.0,
+                  0.0, 0.0, 1.0]

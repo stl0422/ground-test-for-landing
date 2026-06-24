@@ -1,0 +1,110 @@
+# ===========================================================================
+# safeland_complex_terrain.yaml
+#
+# 复杂地形场景专用配置（用于提升环境复杂度的鲁棒性测试）
+#
+# 适用场景：
+#   - 带坑洼/碎石/土坡的户外场景
+#   - 传感器有遮挡/稀疏点云（低速飞行、近距低高度）
+#   - 地形起伏较大（高差 > 0.5m）的非结构化环境
+#
+# 与标准 safeland.yaml 的主要差异：
+#   1. max_valid_z 放宽到 2.0m（允许较高起伏地形）
+#   2. min_cell_points 降低到 2（稀疏点云场景下保留更多有效格子）
+#   3. depression_bg_radius 增大到 1.5m（背景窗口覆盖更大范围的坑洼）
+#   4. enable_alt_landing = true，放宽系数设为 2.0（复杂地形更难找到主降落区）
+#   5. step_window 增大到 0.7m（检测范围更广的地形起伏）
+# ===========================================================================
+
+# ---- 话题 ----
+input_grid_map_topic: /global_grid_map
+output_grid_map_topic: /safeland/grid_map
+
+# ---- 安全阈值（复杂地形适度放宽以保证有候选区）----
+slope_threshold: 0.18        # rad，约 10.3°（标准 8.6°，稍微放宽适应起伏地形）
+roughness_threshold: 0.06    # m（标准 0.05m）
+step_threshold: 0.12         # m（标准 0.10m，适应碎石/土坡表面）
+
+# 稀疏点云场景：min_cell_points 降低到 2 保留更多格子参与评估
+# 注意：过低会引入噪声格子，2 是鲁棒性下限（低于此不建议）
+min_cell_points: 2.0
+
+# 复杂地形中地面高度起伏可能超过 1m，max_valid_z 适当放宽
+# 设为 2.0m 允许有矮灌木/土坡坎/台阶边缘等中等障碍物存在
+max_valid_z: 2.0
+
+# ---- 计算参数 ----
+smooth_radius: 0.4           # m，粗糙度平滑窗口略大（复杂地形噪声更多）
+step_window: 0.7             # m，阶梯检测窗口增大（捕获更广范围的地形起伏）
+
+# ---- 降落区尺寸 ----
+landing_size: 0.5            # m（标准场景可用 0.3m，复杂地形用 0.5m 保证落脚面积）
+landing_height_range_threshold: 0.08  # m（标准 0.05m，起伏地形适当放宽）
+landing_safety_margin: 0.1   # m，保留安全缓冲带
+landing_valid_ratio_threshold: 0.95  # 稀疏点云时可靠栅格占比略放宽（标准 0.98）
+
+# ============================================================
+# ---- Depression 凹陷度参数（复杂地形调整）----
+# ============================================================
+
+# 背景均值窗口扩大到 1.5m：复杂地形中坑洼直径可能超过 1m
+# 更大窗口提供更准确的"正常地面参考高度"
+depression_bg_radius: 1.5
+
+# 与 landing_size 保持一致
+depression_score_window: 1.0
+
+# 阈值略微放宽：复杂地形中轻微凹陷更常见，0.4 允许稍深的坑
+depression_score_threshold: 0.4
+
+depression_percentile_lo: 0.05
+depression_percentile_hi: 0.95
+
+# ---- 可视化层开关 ----
+publish_slope_viz: true
+publish_roughness_viz: true
+publish_landing_viz: true
+publish_depression_raw_viz: true
+publish_depression_norm_viz: true
+publish_depression_score_viz: true
+publish_flatness_score_viz: true
+publish_landing_score_viz: true
+
+# ============================================================
+# ---- landing_score 权重（复杂地形更关注坡度和阶梯）----
+# ============================================================
+landing_score_w_slope: 0.40   # 坡度权重提高（坡度是复杂地形的主要危险）
+landing_score_w_step:  0.30   # 阶梯权重不变
+landing_score_w_dep:   0.20   # 凹陷权重略降（已通过门槛的凹陷在复杂地形中更普遍）
+landing_score_w_rough: 0.10   # 粗糙度权重不变
+
+# ============================================================
+# ---- 最优落点选择策略（复杂地形）----
+# 复杂地形中全图安全区域较少，适当提高距离权重保证落点可达性
+# ============================================================
+best_point_score_weight: 0.65   # 略低于标准（0.7），给距离更多权重
+
+# ============================================================
+# ---- 落点稳定性（复杂地形建议开启强滤波）----
+# 复杂地形中点云噪声更大，建议用更大窗口抑制跳动
+# ============================================================
+best_point_median_window: 7      # 强滤波（复杂地形点云噪声大）
+best_point_jump_guard_m: 2.0     # 跳变门限放大（复杂地形落区位置变化较大）
+
+# ============================================================
+# ---- 应急备降区（复杂地形强烈建议开启）----
+# ============================================================
+enable_alt_landing: true
+
+# 复杂地形中主降落区可能长时间为空，放宽系数 2.0 提供最大搜索范围
+# 上限也设为 2.0，保证备降区坡度不超过 ~17° (0.18×2=0.36rad)
+alt_landing_relax_factor: 2.0
+alt_landing_max_relax: 2.0
+publish_alt_landing_viz: true
+
+# ============================================================
+# ---- 数据记录（复杂地形测试默认开启记录）----
+# ============================================================
+# 设置为非空路径以启用记录，例如：/tmp/safeland_complex_terrain.csv
+metrics_csv_path: ""
+metrics_record_every_n_frames: 1

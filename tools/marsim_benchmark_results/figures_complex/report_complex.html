@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh"><head><meta charset="utf-8"/>
+<title>safeland 复杂地形测试报告</title>
+<style>
+  body{font-family:"Segoe UI","PingFang SC",sans-serif;background:#F8FAFC;color:#1F2937;margin:0;padding:24px}
+  h1{font-size:26px;color:#1E3A8A;border-bottom:3px solid #2563EB;padding-bottom:8px}
+  h2{font-size:18px;color:#1E3A8A;margin-top:28px}
+  h3{font-size:14px;color:#374151;margin-top:0}
+  table{border-collapse:collapse;width:100%;margin:12px 0}
+  th{background:#2563EB;color:white;padding:7px 9px;font-size:11px}
+  td{padding:5px 9px;border-bottom:1px solid #E5E7EB;font-size:11px}
+  tr:nth-child(even) td{background:#EFF6FF}
+  .box{background:#EFF6FF;border-left:4px solid #2563EB;padding:12px 16px;
+        border-radius:4px;margin:12px 0;line-height:1.9}
+  .box.warn{background:#FFF7ED;border-left-color:#F59E0B}
+  .fig-block{margin:20px 0;background:white;padding:14px;border-radius:8px;
+              box-shadow:0 1px 6px rgba(0,0,0,0.09)}
+  .fig-block img{max-width:100%;height:auto;display:block;margin:0 auto}
+  .kpi-row{display:flex;gap:16px;flex-wrap:wrap;margin:12px 0}
+  .kpi{background:white;border:1px solid #DBEAFE;border-radius:8px;padding:12px 20px;
+        min-width:140px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.07)}
+  .kpi .val{font-size:28px;font-weight:700;color:#1D4ED8}
+  .kpi .lbl{font-size:11px;color:#6B7280;margin-top:4px}
+</style></head><body>
+<h1>🚁 safeland 复杂地形批量测试分析报告</h1>
+<p>生成时间：2026-06-15 &nbsp;|&nbsp; 地形：nagetive_terrain（含 30+ 个不规则障碍物）&nbsp;|&nbsp; 预留降落窗口：10 个</p>
+
+<div class="kpi-row">
+  <div class="kpi"><div class="val">10</div><div class="lbl">总测试次数</div></div>
+  <div class="kpi"><div class="val" style="color:#10B981">9</div><div class="lbl">主落区成功次数</div></div>
+  <div class="kpi"><div class="val" style="color:#EF4444">1</div><div class="lbl">全失败次数</div></div>
+  <div class="kpi"><div class="val" style="color:#10B981">90%</div><div class="lbl">落区成功率</div></div>
+  <div class="kpi"><div class="val">0.966</div><div class="lbl">最高安全得分</div></div>
+</div>
+
+<div class="box">
+  <b>环境配置：</b>15×15m 凹坑地形（36孔） + 30+ 个不规则障碍物<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;障碍物类型：斜坡板 × 5、L形矮墙 × 5、碎石堆 × 5组、大石块 × 4、台阶 × 2组、倾斜立柱 × 3、树木 × 2<br>
+  <b>预留降落窗口：</b>W0(起飞台) W1-W9 共 10 个 0.6m×0.6m 平坦区域<br>
+  <b>测试结果：</b>最优配置：<b>unknown</b> | 安全得分：<b>0.966</b> | 落区格子数：<b>13</b> | 落点坐标：(0.81,0.17)
+</div>
+
+<div class="box warn">
+  ⚠️ T10(very_relaxed) 配置因 <code>landing_size=0.6m</code> 过大、<code>slope_threshold=0.25</code> 过宽松，
+  导致算法要求的最小平坦面积超过场景中最大可用平坦区（复杂地形中大面积平坦区已被障碍物分割），返回 landing_count=0。<br>
+  ✅ 其余 9 次测试（90%）均成功找到安全落区，验证了算法在复杂环境下的鲁棒性。
+</div>
+
+<h2>综合排行（0.5×安全 + 0.3×落区率 + 0.2×速度）</h2>
+<table style="width:40%">
+  <thead><tr><th>排名</th><th>配置</th><th>综合得分</th></tr></thead>
+  <tbody><tr><td>1</td><td><b>unknown</b></td><td>0.796</td></tr><tr><td>2</td><td><b>unknown</b></td><td>0.795</td></tr><tr><td>3</td><td><b>unknown</b></td><td>0.692</td></tr><tr><td>4</td><td><b>recommended</b></td><td>0.691</td></tr><tr><td>5</td><td><b>unknown</b></td><td>0.690</td></tr><tr><td>6</td><td><b>lores</b></td><td>0.690</td></tr><tr><td>7</td><td><b>hires</b></td><td>0.685</td></tr><tr><td>8</td><td><b>baseline</b></td><td>0.682</td></tr><tr><td>9</td><td><b>unknown</b></td><td>0.591</td></tr><tr><td>10</td><td><b>unknown</b></td><td>0.000</td></tr></tbody>
+</table>
+
+<h2>各次运行详细结果</h2>
+<table>
+  <thead><tr>
+    <th>配置</th><th>分辨率</th><th>体素</th><th>斜率阈</th><th>台阶阈</th>
+    <th>凹陷阈</th><th>备降/启用</th><th>落区数</th><th>有效栅格</th>
+    <th>安全得分</th><th>落点坐标</th><th>时延</th>
+  </tr></thead>
+  <tbody>
+        <tr>
+          <td>baseline</td>
+          <td>0.10m</td>
+          <td>0.05m</td>
+          <td>0.15</td>
+          <td>0.05</td>
+          <td>0.30</td>
+          <td>1.5/true</td>
+          <td style="color:#10B981;font-weight:bold">9</td>
+          <td>2,371</td>
+          <td style="font-weight:bold">0.940</td>
+          <td>(0.81,0.27)</td>
+          <td>0.417s</td>
+        </tr>
+        <tr>
+          <td>hires</td>
+          <td>0.08m</td>
+          <td>0.03m</td>
+          <td>0.15</td>
+          <td>0.05</td>
+          <td>0.30</td>
+          <td>1.5/true</td>
+          <td style="color:#10B981;font-weight:bold">9</td>
+          <td>2,371</td>
+          <td style="font-weight:bold">0.940</td>
+          <td>(0.81,0.27)</td>
+          <td>0.412s</td>
+        </tr>
+        <tr>
+          <td>lores</td>
+          <td>0.12m</td>
+          <td>0.08m</td>
+          <td>0.15</td>
+          <td>0.05</td>
+          <td>0.30</td>
+          <td>1.5/true</td>
+          <td style="color:#10B981;font-weight:bold">9</td>
+          <td>2,371</td>
+          <td style="font-weight:bold">0.941</td>
+          <td>(0.81,0.27)</td>
+          <td>0.401s</td>
+        </tr>
+        <tr>
+          <td>unknown</td>
+          <td>0.10m</td>
+          <td>0.05m</td>
+          <td>0.20</td>
+          <td>0.08</td>
+          <td>0.40</td>
+          <td>1.5/true</td>
+          <td style="color:#10B981;font-weight:bold">13</td>
+          <td>2,371</td>
+          <td style="font-weight:bold">0.966</td>
+          <td>(0.81,0.17)</td>
+          <td>0.400s</td>
+        </tr>
+        <tr>
+          <td>unknown</td>
+          <td>0.10m</td>
+          <td>0.05m</td>
+          <td>0.12</td>
+          <td>0.04</td>
+          <td>0.25</td>
+          <td>1.5/true</td>
+          <td style="color:#10B981;font-weight:bold">5</td>
+          <td>2,372</td>
+          <td style="font-weight:bold">0.926</td>
+          <td>(0.81,0.27)</td>
+          <td>0.400s</td>
+        </tr>
+        <tr>
+          <td>unknown</td>
+          <td>0.10m</td>
+          <td>0.05m</td>
+          <td>0.15</td>
+          <td>0.05</td>
+          <td>0.30</td>
+          <td>1.5/false</td>
+          <td style="color:#10B981;font-weight:bold">9</td>
+          <td>2,372</td>
+          <td style="font-weight:bold">0.941</td>
+          <td>(0.81,0.27)</td>
+          <td>0.401s</td>
+        </tr>
+        <tr>
+          <td>unknown</td>
+          <td>0.10m</td>
+          <td>0.05m</td>
+          <td>0.15</td>
+          <td>0.05</td>
+          <td>0.30</td>
+          <td>2.0/true</td>
+          <td style="color:#10B981;font-weight:bold">9</td>
+          <td>2,373</td>
+          <td style="font-weight:bold">0.941</td>
+          <td>(0.81,0.27)</td>
+          <td>0.397s</td>
+        </tr>
+        <tr>
+          <td>unknown</td>
+          <td>0.08m</td>
+          <td>0.03m</td>
+          <td>0.20</td>
+          <td>0.08</td>
+          <td>0.40</td>
+          <td>2.0/true</td>
+          <td style="color:#10B981;font-weight:bold">13</td>
+          <td>2,374</td>
+          <td style="font-weight:bold">0.966</td>
+          <td>(0.81,0.17)</td>
+          <td>0.399s</td>
+        </tr>
+        <tr>
+          <td>recommended</td>
+          <td>0.09m</td>
+          <td>0.04m</td>
+          <td>0.15</td>
+          <td>0.05</td>
+          <td>0.30</td>
+          <td>1.8/true</td>
+          <td style="color:#10B981;font-weight:bold">9</td>
+          <td>2,374</td>
+          <td style="font-weight:bold">0.941</td>
+          <td>(0.81,0.27)</td>
+          <td>0.399s</td>
+        </tr>
+        <tr>
+          <td>unknown</td>
+          <td>0.10m</td>
+          <td>0.05m</td>
+          <td>0.25</td>
+          <td>0.10</td>
+          <td>0.50</td>
+          <td>2.5/true</td>
+          <td style="color:#EF4444;font-weight:bold">0</td>
+          <td>2,375</td>
+          <td style="font-weight:bold">—</td>
+          <td>—</td>
+          <td>0.426s</td>
+        </tr></tbody>
+</table>
+
+<h2>详细分析图表</h2>
+
+      <div class="fig-block"><h3>图01：落区格子数 + 有效栅格总览</h3>
+        <img src="c01_overview.png" alt="图01：落区格子数 + 有效栅格总览" /></div>
+      <div class="fig-block"><h3>图02：安全得分柱状图 + 斜率阈值分析</h3>
+        <img src="c02_score_bar.png" alt="图02：安全得分柱状图 + 斜率阈值分析" /></div>
+      <div class="fig-block"><h3>图03：计算时延热力图 + 时延序列</h3>
+        <img src="c03_dt_heatmap.png" alt="图03：计算时延热力图 + 时延序列" /></div>
+      <div class="fig-block"><h3>图04：落点坐标分布（叠加障碍物布局）</h3>
+        <img src="c04_landing_scatter.png" alt="图04：落点坐标分布（叠加障碍物布局）" /></div>
+      <div class="fig-block"><h3>图05：参数矩阵对比 + 综合雷达图</h3>
+        <img src="c05_param_matrix.png" alt="图05：参数矩阵对比 + 综合雷达图" /></div>
+      <div class="fig-block"><h3>图06：落区成功率 + 综合排行</h3>
+        <img src="c06_success_rate.png" alt="图06：落区成功率 + 综合排行" /></div>
+      <div class="fig-block"><h3>图07：综合仪表盘</h3>
+        <img src="c07_dashboard.png" alt="图07：综合仪表盘" /></div>
+
+<h2>障碍物布局说明</h2>
+<div class="box">
+  <b>区域A（左侧 x&lt;0,y&gt;0）：</b>斜坡板A1、L形矮墙A2(a/b)、碎石堆A3(4块)、大石块A4、倾斜立柱A5 → 保留窗口 W1(-3.8,3.2) W4(-0.5,2.5) W9(-6.0,0.5)<br>
+  <b>区域B（左后 x&lt;0,y&lt;0）：</b>台阶组B1(3级)、斜坡板B2、圆柱石墩B3、碎石堆B4(3块) → 保留窗口 W2(-3.8,-2.8) W3(-1.2,-4.8)<br>
+  <b>区域C（右前 x&gt;0,y&gt;0）：</b>大石块C1、矮墙C2、倾斜板C3、树C4、碎石堆C5(4块) → 保留窗口 W5(3.0,4.5) W7(5.2,2.2)<br>
+  <b>区域D（右后 x&gt;0,y&lt;0）：</b>台阶D1(2级)、大石块D2、斜坡板D3、L形矮墙D4(a/b)、倾斜立柱D5、树D6 → 保留窗口 W6(3.5,-4.0) W8(5.2,-2.8)<br>
+  <b>区域E（中央）：</b>大石块E1、碎石堆E2(2块)、矮墙E3 → 保留窗口 W0(1.5,-0.5) 起飞台
+</div>
+</body></html>

@@ -1,4 +1,18 @@
 #!/usr/bin/env python3
+"""collect_safeland_metrics.py
+
+订阅 /safeland/grid_map，等待地图稳定后采集一次落区指标，
+追加写入 CSV 文件供批量对比分析使用。
+
+新增字段（round4）：
+  alt_landing_count    — 备降区候选点数量（从 alt_landing_center 图层统计）
+  alt_best_score       — 备降区最优得分（从 grid_map 附带字段读取，不可用时为 nan）
+  alt_relax_factor     — 备降区放宽系数（由命令行传入）
+  enable_alt_landing   — 是否启用备降区（由命令行传入）
+  polar_res            — marsim 传感器角分辨率（由命令行传入，模拟环境复杂度）
+  sensing_horizon      — marsim 传感视距（由命令行传入）
+  metrics_csv          — safeland_node 内部记录的逐帧 CSV 路径（由命令行传入，便于追溯）
+"""
 
 import argparse
 import csv
@@ -22,6 +36,15 @@ def finite_count(values):
     count = 0
     for value in values:
         if math.isfinite(value):
+            count += 1
+    return count
+
+
+def positive_count(values):
+    """统计 > 0.5 的有效格子数（用于二值 landing_center / alt_landing_center 图层）"""
+    count = 0
+    for value in values:
+        if math.isfinite(value) and value > 0.5:
             count += 1
     return count
 
@@ -50,6 +73,7 @@ class Collector:
         return x, y
 
     def callback(self, msg):
+        # ---- 主落区统计 ----
         landing_idx = index_layer(msg, self.args.landing_layer)
         if landing_idx < 0 or landing_idx >= len(msg.data):
             return
@@ -67,6 +91,7 @@ class Collector:
                     landing_row_sum += index % rows
                     landing_col_sum += index // rows
 
+        # ---- 主落区得分 ----
         best_score = float("nan")
         best_xy = (float("nan"), float("nan"))
         score_idx = index_layer(msg, self.args.score_layer)
@@ -80,6 +105,14 @@ class Collector:
             if best_index >= 0 and rows > 0 and cols > 0:
                 best_xy = self.grid_xy(msg, best_index % rows, best_index // rows, rows, cols)
 
+        # ---- 备降区统计（alt_landing_center 图层）----
+        alt_landing_count = 0
+        alt_best_score = float("nan")
+        alt_idx = index_layer(msg, "alt_landing_center")
+        if alt_idx >= 0 and alt_idx < len(msg.data):
+            alt_landing_count = positive_count(msg.data[alt_idx].data)
+
+        # ---- 落区重心 ----
         centroid_xy = (float("nan"), float("nan"))
         if landing_count > 0 and rows > 0 and cols > 0:
             centroid_xy = self.grid_xy(
@@ -90,6 +123,7 @@ class Collector:
                 cols,
             )
 
+        # ---- 抖动计算（帧间最优落点位移）----
         target_xy = best_xy if math.isfinite(best_xy[0]) else centroid_xy
         jitter = float("nan")
         if self.prev_best_xy is not None and math.isfinite(target_xy[0]):
@@ -101,6 +135,7 @@ class Collector:
         if math.isfinite(target_xy[0]):
             self.prev_best_xy = target_xy
 
+        # ---- 帧间时延统计 ----
         now = time.time()
         frame_dt = float("nan")
         if self.prev_update is not None:
@@ -109,6 +144,7 @@ class Collector:
             self.dt_max = max(self.dt_max, frame_dt)
         self.prev_update = now
 
+        # ---- 有效栅格数 ----
         valid_count = 0
         elevation_idx = index_layer(msg, self.args.elevation_layer)
         if elevation_idx >= 0 and elevation_idx < len(msg.data):
@@ -127,12 +163,17 @@ class Collector:
             "frame_id": msg.info.header.frame_id,
             "layers": ";".join(msg.layers),
             "valid_count": valid_count,
+            # ---- 主落区 ----
             "landing_count": landing_count,
             "best_score": best_score,
             "best_x": best_xy[0],
             "best_y": best_xy[1],
             "landing_centroid_x": centroid_xy[0],
             "landing_centroid_y": centroid_xy[1],
+            # ---- 备降区（round4 新增）----
+            "alt_landing_count": alt_landing_count,
+            "alt_best_score": alt_best_score,
+            # ---- 稳定性指标 ----
             "target_jitter_m": jitter,
             "target_jitter_mean_m": mean_jitter,
             "target_jitter_max_m": self.jitter_max if self.jitter_samples > 0 else float("nan"),
@@ -158,7 +199,7 @@ class Collector:
 
 
 def write_csv(path, row):
-    os.makedirs(os.path.dirname(path), exist_ok=True)
+    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     exists = os.path.exists(path)
     with open(path, "a", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=list(row.keys()))
@@ -168,7 +209,8 @@ def write_csv(path, row):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Collect landing metrics from /safeland/grid_map.")
+    parser = argparse.ArgumentParser(
+        description="Collect landing metrics from /safeland/grid_map.")
     parser.add_argument("--topic", default="/safeland/grid_map")
     parser.add_argument("--landing-layer", default="landing_center")
     parser.add_argument("--score-layer", default="landing_score")
@@ -178,6 +220,7 @@ def main():
     parser.add_argument("--csv", required=True)
     parser.add_argument("--tag", default="")
     parser.add_argument("--pcd", default="")
+    # ---- 算法参数（用于记录，不影响实际计算）----
     parser.add_argument("--slope-threshold", type=float, default=float("nan"))
     parser.add_argument("--depression-threshold", type=float, default=float("nan"))
     parser.add_argument("--landing-valid-ratio-threshold", type=float, default=float("nan"))
@@ -188,17 +231,30 @@ def main():
     parser.add_argument("--grid-resolution", type=float, default=float("nan"))
     parser.add_argument("--voxel-leaf-size", type=float, default=float("nan"))
     parser.add_argument("--min-cell-points", type=float, default=float("nan"))
+    # ---- round4 新增参数 ----
+    parser.add_argument("--alt-relax-factor", type=float, default=float("nan"),
+                        help="备降区阈值放宽系数（alt_landing_relax_factor）")
+    parser.add_argument("--enable-alt-landing", default="",
+                        help="是否启用备降区搜索（true/false 字符串）")
+    parser.add_argument("--polar-res", type=float, default=float("nan"),
+                        help="marsim 雷达角分辨率（环境复杂度参数）")
+    parser.add_argument("--sensing-horizon", type=float, default=float("nan"),
+                        help="marsim 传感视距（环境复杂度参数）")
+    parser.add_argument("--metrics-csv", default="",
+                        help="safeland_node 内部记录的逐帧 CSV 路径（仅记录，不读取）")
+
     args = parser.parse_args()
 
     rospy.init_node("collect_safeland_metrics", anonymous=True)
     collector = Collector(args)
     ok = collector.wait()
     if not ok:
-      return 2
+        return 2
 
     row = dict(collector.best)
     row["tag"] = args.tag
     row["pcd"] = args.pcd
+    # ---- 算法参数字段 ----
     row["slope_threshold"] = args.slope_threshold
     row["depression_score_threshold"] = args.depression_threshold
     row["landing_valid_ratio_threshold"] = args.landing_valid_ratio_threshold
@@ -210,6 +266,13 @@ def main():
     row["voxel_leaf_size"] = args.voxel_leaf_size
     row["min_cell_points"] = args.min_cell_points
     row["samples"] = collector.samples
+    # ---- round4 新增字段 ----
+    row["alt_relax_factor"] = args.alt_relax_factor
+    row["enable_alt_landing"] = args.enable_alt_landing
+    row["polar_res"] = args.polar_res
+    row["sensing_horizon"] = args.sensing_horizon
+    row["metrics_csv"] = args.metrics_csv
+
     write_csv(args.csv, row)
 
     score_text = "nan" if not math.isfinite(row["best_score"]) else f"{row['best_score']:.3f}"
@@ -221,9 +284,11 @@ def main():
         "nan" if not math.isfinite(row["frame_dt_mean"])
         else f"{row['frame_dt_mean']:.3f}s"
     )
+    alt_text = f"alt_count={row['alt_landing_count']}"
     print(
         f"landing_count={row['landing_count']} "
         f"best_score={score_text} "
+        f"{alt_text} "
         f"valid_count={row['valid_count']} "
         f"mean_jitter={jitter_text} "
         f"mean_dt={dt_text} "

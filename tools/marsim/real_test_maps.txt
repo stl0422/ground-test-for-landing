@@ -1,0 +1,3 @@
+/home/fractal/fastlio/src/FAST_LIO/maps_pcd/kdxt_world_downsampled.pcd
+/home/fractal/super_ws/src/SUPER/mars_uav_sim/perfect_drone_sim/pcd/random_map_24_6635.pcd
+/home/fractal/super_ws/src/SUPER/mars_uav_sim/perfect_drone_sim/pcd/random_map_2_26609.pcd
